@@ -21,6 +21,8 @@
             --text-sub: #8b98a5;
             --accent-green: #00e676;
             --accent-red: #ff5252;
+            --accent-lightning: #e040fb;
+            --accent-fire: #ff9100;
             --ma-color: #ffb300;
             --candle-up: #089981;
             --candle-down: #f23645;
@@ -135,7 +137,26 @@
             font-weight: 700;
         }
 
-        /* Main Metric Badge: 60MA 대비 종가 상승률 */
+        .target-date .hot-tag {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .target-date .hot-tag.fire {
+            background: rgba(255, 145, 0, 0.2);
+            color: #ff9100;
+            border: 1px solid rgba(255, 145, 0, 0.4);
+        }
+
+        .target-date .hot-tag.lightning {
+            background: rgba(224, 64, 251, 0.2);
+            color: #e040fb;
+            border: 1px solid rgba(224, 64, 251, 0.4);
+        }
+
+        /* Main Metric Badge */
         .main-stat-badge {
             padding: 6px 14px;
             border-radius: 8px;
@@ -147,6 +168,18 @@
             background: rgba(0, 230, 118, 0.15);
             border: 1px solid rgba(0, 230, 118, 0.35);
             color: var(--accent-green);
+        }
+
+        .main-stat-badge.fire {
+            background: rgba(255, 145, 0, 0.2);
+            border: 1px solid rgba(255, 145, 0, 0.5);
+            color: #ff9100;
+        }
+
+        .main-stat-badge.lightning {
+            background: rgba(224, 64, 251, 0.22);
+            border: 1px solid rgba(224, 64, 251, 0.55);
+            color: #e040fb;
         }
 
         .main-stat-badge.minus {
@@ -302,19 +335,19 @@
         .legend-indicator {
             display: flex;
             align-items: center;
-            gap: 12px;
-            font-size: 11px;
+            gap: 8px;
+            font-size: 10px;
             color: var(--text-sub);
         }
 
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
         }
 
         .legend-color {
-            width: 10px;
+            width: 8px;
             height: 3px;
             border-radius: 2px;
         }
@@ -372,14 +405,15 @@
                 <div class="target-date" id="disp-date">
                     <span class="tag">선택 월봉</span>
                     <span id="val-date">--</span>
+                    <span id="val-hot-tag"></span>
                 </div>
                 <div style="font-size: 22px; font-weight: 800; font-family: 'JetBrains Mono', monospace; margin-top: 4px;" id="val-close-price">
                     $0.00
                 </div>
             </div>
-            <!-- Main requested ratio: 60월봉 대비 종가 상승률 ((Close / MA60) - 1) * 100 -->
+            <!-- Main requested ratio: 60월봉 대비 종가 상승률 -->
             <div class="main-stat-badge na" id="disparity-badge">
-                <span class="stat-label-mini">60월선 대비 상승률 (종가/60MA - 1)</span>
+                <span class="stat-label-mini" id="label-stat-title">60선 대비 상승률 (종가/60MA - 1)</span>
                 <span class="stat-val-huge" id="val-growth-pct">--%</span>
             </div>
         </div>
@@ -415,7 +449,7 @@
         
         <div class="tap-guide">
             <div class="dot"></div>
-            <span>차트의 월봉을 터치/클릭하면 60선 대비 상승률이 표시됩니다</span>
+            <span>차트 월봉을 터치하면 상세 수치가 표시됩니다</span>
         </div>
 
         <div id="loading">
@@ -434,12 +468,14 @@
         </div>
         <div class="legend-indicator">
             <div class="legend-item">
-                <div class="legend-color" style="background: var(--candle-up);"></div>
-                <span>월봉</span>
+                <span>🔥 50%+</span>
+            </div>
+            <div class="legend-item">
+                <span>⚡ 60%+</span>
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background: var(--ma-color); height: 2px;"></div>
-                <span>60월 MA</span>
+                <span>60MA</span>
             </div>
         </div>
     </footer>
@@ -484,7 +520,7 @@
                 rightPriceScale: {
                     borderColor: '#232a3b',
                     scaleMargins: {
-                        top: 0.1,
+                        top: 0.12,
                         bottom: 0.15,
                     },
                 },
@@ -552,6 +588,7 @@
             const ma60El = document.getElementById('val-ma60');
             const diffDollarEl = document.getElementById('val-diff-dollar');
             const multipleEl = document.getElementById('val-multiple');
+            const hotTagEl = document.getElementById('val-hot-tag');
 
             if (stat.ma60 !== null && stat.ma60 !== undefined) {
                 ma60El.textContent = `$${stat.ma60.toFixed(2)}`;
@@ -569,7 +606,21 @@
                 const multiple = (stat.close / stat.ma60).toFixed(2);
                 multipleEl.textContent = `${multiple}x`;
 
-                badge.className = 'main-stat-badge ' + (gVal >= 0 ? 'plus' : 'minus');
+                if (gVal >= 60.0) {
+                    badge.className = 'main-stat-badge lightning';
+                    growthPctEl.textContent = `⚡ ${gSign}${gVal.toFixed(2)}%`;
+                    hotTagEl.className = 'hot-tag lightning';
+                    hotTagEl.textContent = '⚡ 60%+';
+                } else if (gVal >= 50.0) {
+                    badge.className = 'main-stat-badge fire';
+                    growthPctEl.textContent = `🔥 ${gSign}${gVal.toFixed(2)}%`;
+                    hotTagEl.className = 'hot-tag fire';
+                    hotTagEl.textContent = '🔥 50%+';
+                } else {
+                    badge.className = 'main-stat-badge ' + (gVal >= 0 ? 'plus' : 'minus');
+                    hotTagEl.className = '';
+                    hotTagEl.textContent = '';
+                }
             } else {
                 ma60El.textContent = '60개월 이전';
                 diffDollarEl.textContent = '--';
@@ -577,6 +628,8 @@
                 multipleEl.textContent = '--';
                 growthPctEl.textContent = 'N/A';
                 badge.className = 'main-stat-badge na';
+                hotTagEl.className = '';
+                hotTagEl.textContent = '';
             }
         }
 
@@ -604,11 +657,35 @@
             document.getElementById('last-updated-text').textContent = `최근 갱신: ${data.last_updated}`;
 
             statsMap = {};
+            const markers = [];
+
             data.stats.forEach(s => {
                 statsMap[s.time] = s;
+                if (s.growth_pct !== null && s.growth_pct !== undefined) {
+                    if (s.growth_pct >= 60.0) {
+                        markers.push({
+                            time: s.time,
+                            position: 'aboveBar',
+                            color: '#e040fb',
+                            shape: 'circle',
+                            text: '⚡',
+                            size: 1
+                        });
+                    } else if (s.growth_pct >= 50.0) {
+                        markers.push({
+                            time: s.time,
+                            position: 'aboveBar',
+                            color: '#ff9100',
+                            shape: 'circle',
+                            text: '🔥',
+                            size: 1
+                        });
+                    }
+                }
             });
 
             candleSeries.setData(data.candles);
+            candleSeries.setMarkers(markers);
             ma60Series.setData(data.ma60);
 
             if (data.stats.length > 0) {
