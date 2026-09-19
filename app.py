@@ -19,7 +19,6 @@ def fetch_qqq_monthly_data(force=False):
     
     try:
         ticker = yf.Ticker('QQQ')
-        # auto_adjust=False ensures exact match with MTS market prices
         df = ticker.history(period='max', interval='1mo', auto_adjust=False)
         
         if df.empty:
@@ -29,8 +28,6 @@ def fetch_qqq_monthly_data(force=False):
             
         df = df.reset_index()
         df['time'] = pd.to_datetime(df['Date']).dt.strftime('%Y-%m-%d')
-        
-        # 60-month Moving Average based on unadjusted Close
         df['ma60'] = df['Close'].rolling(window=60).mean()
         
         candles = []
@@ -56,16 +53,12 @@ def fetch_qqq_monthly_data(force=False):
             
             ma_val = None
             diff_val = None
-            diff_pct_ma = None      # (Close - MA60) / MA60 * 100
-            diff_pct_close = None   # (Close - MA60) / Close * 100
-            mts_ratio = None        # (MA60 - Close) / Close * 100 (증권사 MTS 방식)
+            growth_pct = None  # (Close / MA60 - 1) * 100
             
             if not pd.isna(row['ma60']):
                 ma_val = round(float(row['ma60']), 2)
                 diff_val = round(c - ma_val, 2)
-                diff_pct_ma = round(((c - ma_val) / ma_val) * 100, 2)
-                diff_pct_close = round(((c - ma_val) / c) * 100, 2)
-                mts_ratio = round(((ma_val - c) / c) * 100, 2)
+                growth_pct = round(((c / ma_val) - 1.0) * 100.0, 2)
                 
                 ma60_line.append({
                     'time': t,
@@ -80,9 +73,7 @@ def fetch_qqq_monthly_data(force=False):
                 'close': c,
                 'ma60': ma_val,
                 'diff': diff_val,
-                'diff_pct_ma': diff_pct_ma,
-                'diff_pct_close': diff_pct_close,
-                'mts_ratio': mts_ratio
+                'growth_pct': growth_pct
             })
             
         result = {

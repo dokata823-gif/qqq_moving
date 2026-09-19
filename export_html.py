@@ -27,16 +27,12 @@ def export_standalone_html(output_file='qqq_monthly_chart.html'):
         
         ma_val = None
         diff_val = None
-        diff_pct_ma = None
-        diff_pct_close = None
-        mts_ratio = None
+        growth_pct = None  # (Close / MA60 - 1) * 100
         
         if not pd.isna(row['ma60']):
             ma_val = round(float(row['ma60']), 2)
             diff_val = round(c - ma_val, 2)
-            diff_pct_ma = round(((c - ma_val) / ma_val) * 100, 2)
-            diff_pct_close = round(((c - ma_val) / c) * 100, 2)
-            mts_ratio = round(((ma_val - c) / c) * 100, 2)
+            growth_pct = round(((c / ma_val) - 1.0) * 100.0, 2)
             
             ma60_line.append({'time': t, 'value': ma_val})
         
@@ -48,9 +44,7 @@ def export_standalone_html(output_file='qqq_monthly_chart.html'):
             'close': c,
             'ma60': ma_val,
             'diff': diff_val,
-            'diff_pct_ma': diff_pct_ma,
-            'diff_pct_close': diff_pct_close,
-            'mts_ratio': mts_ratio
+            'growth_pct': growth_pct
         })
         
     dataset = {
