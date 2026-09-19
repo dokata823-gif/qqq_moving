@@ -1,0 +1,656 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>QQQ 60월선 이격도 분석 모바일 차트</title>
+    <!-- TradingView Lightweight Charts -->
+    <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --card-bg: #151a23;
+            --card-border: #232a3b;
+            --text-main: #f0f4f8;
+            --text-sub: #8b98a5;
+            --accent-green: #00e676;
+            --accent-red: #ff5252;
+            --ma-color: #ffb300;
+            --candle-up: #089981;
+            --candle-down: #f23645;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Top Header */
+        header {
+            padding: 12px 16px;
+            background: linear-gradient(180deg, #181e2b 0%, #11151f 100%);
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ticker-badge {
+            background: #2563eb;
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 14px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .header-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .header-sub {
+            font-size: 11px;
+            color: var(--text-sub);
+        }
+
+        .refresh-btn {
+            background: #1e2638;
+            border: 1px solid #2e3b55;
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:active {
+            transform: scale(0.95);
+            background: #2d384e;
+        }
+
+        /* Metrics Display Panel */
+        .metrics-panel {
+            padding: 12px 16px;
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .metrics-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .target-date {
+            font-size: 12px;
+            color: var(--text-sub);
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .target-date .tag {
+            background: rgba(255, 179, 0, 0.15);
+            color: var(--ma-color);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .main-stat-badge {
+            padding: 6px 12px;
+            border-radius: 8px;
+            text-align: right;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .main-stat-badge.plus {
+            background: rgba(0, 230, 118, 0.12);
+            border: 1px solid rgba(0, 230, 118, 0.3);
+            color: var(--accent-green);
+        }
+
+        .main-stat-badge.minus {
+            background: rgba(255, 82, 82, 0.12);
+            border: 1px solid rgba(255, 82, 82, 0.3);
+            color: var(--accent-red);
+        }
+
+        .main-stat-badge.na {
+            background: rgba(139, 152, 165, 0.12);
+            border: 1px solid rgba(139, 152, 165, 0.3);
+            color: var(--text-sub);
+        }
+
+        .stat-label-mini {
+            font-size: 10px;
+            opacity: 0.85;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .stat-val-huge {
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        /* Metric Grid */
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .metric-card {
+            background: #0f131a;
+            border: 1px solid #1c2331;
+            padding: 8px 6px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .metric-card .title {
+            font-size: 10px;
+            color: var(--text-sub);
+            margin-bottom: 3px;
+        }
+
+        .metric-card .value {
+            font-size: 12px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .ohlc-bar {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-sub);
+            background: #0e1219;
+            padding: 6px 10px;
+            border-radius: 6px;
+        }
+
+        .ohlc-bar span b {
+            color: var(--text-main);
+        }
+
+        /* Chart Area */
+        .chart-container-wrap {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            min-height: 440px;
+            background: var(--bg-color);
+        }
+
+        #chart {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Floating Tooltip / Guide */
+        .tap-guide {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(21, 26, 35, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--card-border);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            color: var(--text-sub);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 10;
+        }
+
+        .tap-guide .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--ma-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.7; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.7; }
+        }
+
+        /* Bottom Controls */
+        .bottom-toolbar {
+            padding: 10px 16px;
+            background-color: var(--card-bg);
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .time-range-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .time-btn {
+            background: #11151f;
+            border: 1px solid var(--card-border);
+            color: var(--text-sub);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .time-btn.active {
+            background: #2563eb;
+            color: #ffffff;
+            border-color: #2563eb;
+        }
+
+        .legend-indicator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 11px;
+            color: var(--text-sub);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .legend-color {
+            width: 10px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        /* Loading Overlay */
+        #loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(11, 14, 20, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            gap: 12px;
+        }
+
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid rgba(37, 99, 235, 0.2);
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="header-title-wrap">
+            <span class="ticker-badge">QQQ</span>
+            <div>
+                <div class="header-title">월봉 60선 이격도 분석</div>
+                <div class="header-sub" id="last-updated-text">실시간 데이터 로딩 중...</div>
+            </div>
+        </div>
+        <button class="refresh-btn" id="btn-refresh" onclick="reloadData(true)">
+            <span>🔄</span> 갱신
+        </button>
+    </header>
+
+    <!-- Interactive Metrics Panel -->
+    <section class="metrics-panel">
+        <div class="metrics-top-row">
+            <div>
+                <div class="target-date" id="disp-date">
+                    <span class="tag">선택 월봉</span>
+                    <span id="val-date">--</span>
+                </div>
+                <div style="font-size: 22px; font-weight: 800; font-family: 'JetBrains Mono', monospace; margin-top: 4px;" id="val-close-price">
+                    $0.00
+                </div>
+            </div>
+            <!-- Main requested ratio: Disparity % -->
+            <div class="main-stat-badge na" id="disparity-badge">
+                <span class="stat-label-mini">종가 vs 60월MA 이격률</span>
+                <span class="stat-val-huge" id="val-diff-pct">--%</span>
+            </div>
+        </div>
+
+        <!-- Metric Details Grid -->
+        <div class="metric-grid">
+            <div class="metric-card">
+                <div class="title">60월 이동평균</div>
+                <div class="value" style="color: var(--ma-color);" id="val-ma60">--</div>
+            </div>
+            <div class="metric-card">
+                <div class="title">주가 차이 ($)</div>
+                <div class="value" id="val-diff-dollar">--</div>
+            </div>
+            <div class="metric-card">
+                <div class="title">이격률 (MA기준)</div>
+                <div class="value" id="val-diff-ma-pct">--</div>
+            </div>
+            <div class="metric-card">
+                <div class="title">이격률 (종가기준)</div>
+                <div class="value" id="val-diff-close-pct">--</div>
+            </div>
+        </div>
+
+        <!-- OHLC Summary -->
+        <div class="ohlc-bar">
+            <span>시 <b>$<span id="val-open">--</span></b></span>
+            <span>고 <b style="color: var(--candle-up);">$<span id="val-high">--</span></b></span>
+            <span>저 <b style="color: var(--candle-down);">$<span id="val-low">--</span></b></span>
+            <span>종 <b>$<span id="val-close">--</span></b></span>
+        </div>
+    </section>
+
+    <!-- Main Chart Section -->
+    <main class="chart-container-wrap">
+        <div id="chart"></div>
+        
+        <div class="tap-guide">
+            <div class="dot"></div>
+            <span>차트의 월봉을 터치/클릭하면 60선 이격도가 표시됩니다</span>
+        </div>
+
+        <div id="loading">
+            <div class="spinner"></div>
+            <span style="font-size: 13px; color: var(--text-sub);">QQQ 월봉 데이터 수집 및 60선 계산 중...</span>
+        </div>
+    </main>
+
+    <!-- Bottom Toolbar -->
+    <footer class="bottom-toolbar">
+        <div class="time-range-group">
+            <button class="time-btn" onclick="setRange('all')">전체</button>
+            <button class="time-btn" onclick="setRange('10y')">10년</button>
+            <button class="time-btn" onclick="setRange('5y')">5년</button>
+            <button class="time-btn active" onclick="fitChart()">자동맞춤</button>
+        </div>
+        <div class="legend-indicator">
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--candle-up);"></div>
+                <span>월봉</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--ma-color); height: 2px;"></div>
+                <span>60월 MA</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let chart = null;
+        let candleSeries = null;
+        let ma60Series = null;
+        let statsMap = {};
+        let rawData = null;
+        let latestStat = null;
+
+        function initChart() {
+            const chartContainer = document.getElementById('chart');
+            
+            chart = LightweightCharts.createChart(chartContainer, {
+                layout: {
+                    background: { color: '#0b0e14' },
+                    textColor: '#8b98a5',
+                    fontSize: 11,
+                    fontFamily: 'JetBrains Mono, Pretendard, sans-serif',
+                },
+                grid: {
+                    vertLines: { color: '#161d28', style: LightweightCharts.LineStyle.Dotted },
+                    horzLines: { color: '#161d28', style: LightweightCharts.LineStyle.Dotted },
+                },
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal,
+                    vertLine: {
+                        color: '#ffb300',
+                        width: 1,
+                        style: LightweightCharts.LineStyle.Dashed,
+                        labelBackgroundColor: '#ffb300',
+                    },
+                    horzLine: {
+                        color: '#2563eb',
+                        width: 1,
+                        style: LightweightCharts.LineStyle.Dashed,
+                        labelBackgroundColor: '#2563eb',
+                    },
+                },
+                rightPriceScale: {
+                    borderColor: '#232a3b',
+                    scaleMargins: {
+                        top: 0.1,
+                        bottom: 0.15,
+                    },
+                },
+                timeScale: {
+                    borderColor: '#232a3b',
+                    timeVisible: true,
+                    secondsVisible: false,
+                    fixLeftEdge: true,
+                    fixRightEdge: true,
+                },
+                handleScroll: {
+                    vertTouchDrag: false,
+                },
+            });
+
+            candleSeries = chart.addCandlestickSeries({
+                upColor: '#089981',
+                downColor: '#f23645',
+                borderUpColor: '#089981',
+                borderDownColor: '#f23645',
+                wickUpColor: '#089981',
+                wickDownColor: '#f23645',
+            });
+
+            ma60Series = chart.addLineSeries({
+                color: '#ffb300',
+                lineWidth: 2.5,
+                title: '60M MA',
+                priceLineVisible: false,
+                lastValueVisible: true,
+            });
+
+            chart.subscribeCrosshairMove(param => {
+                if (!param || !param.time) {
+                    if (latestStat) updatePanel(latestStat);
+                    return;
+                }
+                const timeStr = typeof param.time === 'string' ? param.time : `${param.time.year}-${String(param.time.month).padStart(2,'0')}-${String(param.time.day).padStart(2,'0')}`;
+                const stat = statsMap[timeStr];
+                if (stat) {
+                    updatePanel(stat);
+                }
+            });
+
+            window.addEventListener('resize', () => {
+                if (chart) {
+                    chart.applyOptions({
+                        width: chartContainer.clientWidth,
+                        height: chartContainer.clientHeight
+                    });
+                }
+            });
+        }
+
+        function updatePanel(stat) {
+            document.getElementById('val-date').textContent = stat.time;
+            document.getElementById('val-close-price').textContent = `$${stat.close.toFixed(2)}`;
+            document.getElementById('val-open').textContent = stat.open.toFixed(2);
+            document.getElementById('val-high').textContent = stat.high.toFixed(2);
+            document.getElementById('val-low').textContent = stat.low.toFixed(2);
+            document.getElementById('val-close').textContent = stat.close.toFixed(2);
+
+            const badge = document.getElementById('disparity-badge');
+            const diffPctEl = document.getElementById('val-diff-pct');
+            const ma60El = document.getElementById('val-ma60');
+            const diffDollarEl = document.getElementById('val-diff-dollar');
+            const diffMaPctEl = document.getElementById('val-diff-ma-pct');
+            const diffClosePctEl = document.getElementById('val-diff-close-pct');
+
+            if (stat.ma60 !== null && stat.ma60 !== undefined) {
+                ma60El.textContent = `$${stat.ma60.toFixed(2)}`;
+                
+                const diff = stat.diff;
+                const sign = diff >= 0 ? '+' : '';
+                diffDollarEl.textContent = `${sign}$${diff.toFixed(2)}`;
+                diffDollarEl.style.color = diff >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                
+                diffMaPctEl.textContent = `${sign}${stat.diff_pct_ma.toFixed(2)}%`;
+                diffMaPctEl.style.color = diff >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+
+                diffClosePctEl.textContent = `${sign}${stat.diff_pct_close.toFixed(2)}%`;
+                diffClosePctEl.style.color = diff >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+
+                diffPctEl.textContent = `${sign}${stat.diff_pct_ma.toFixed(2)}%`;
+
+                badge.className = 'main-stat-badge ' + (diff >= 0 ? 'plus' : 'minus');
+            } else {
+                ma60El.textContent = '60개월 이전';
+                diffDollarEl.textContent = '--';
+                diffDollarEl.style.color = 'var(--text-sub)';
+                diffMaPctEl.textContent = '--';
+                diffMaPctEl.style.color = 'var(--text-sub)';
+                diffClosePctEl.textContent = '--';
+                diffClosePctEl.style.color = 'var(--text-sub)';
+                diffPctEl.textContent = 'N/A';
+                badge.className = 'main-stat-badge na';
+            }
+        }
+
+        async function reloadData(force = false) {
+            const loading = document.getElementById('loading');
+            loading.style.display = 'flex';
+            try {
+                const res = await fetch(`/api/data${force ? '?force=true' : ''}`);
+                const json = await res.json();
+                if (json.status === 'success') {
+                    renderData(json.data);
+                } else {
+                    alert('데이터 로딩 실패: ' + json.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('서버 연결 오류가 발생했습니다.');
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function renderData(data) {
+            rawData = data;
+            document.getElementById('last-updated-text').textContent = `최근 갱신: ${data.last_updated}`;
+
+            statsMap = {};
+            data.stats.forEach(s => {
+                statsMap[s.time] = s;
+            });
+
+            candleSeries.setData(data.candles);
+            ma60Series.setData(data.ma60);
+
+            if (data.stats.length > 0) {
+                latestStat = data.stats[data.stats.length - 1];
+                updatePanel(latestStat);
+            }
+
+            fitChart();
+        }
+
+        function fitChart() {
+            if (chart) {
+                chart.timeScale().fitContent();
+            }
+        }
+
+        function setRange(range) {
+            if (!rawData || !rawData.candles || rawData.candles.length === 0) return;
+            const len = rawData.candles.length;
+            let fromIndex = 0;
+            if (range === '5y') {
+                fromIndex = Math.max(0, len - 60);
+            } else if (range === '10y') {
+                fromIndex = Math.max(0, len - 120);
+            } else {
+                fromIndex = 0;
+            }
+            const fromTime = rawData.candles[fromIndex].time;
+            const toTime = rawData.candles[len - 1].time;
+            chart.timeScale().setVisibleRange({
+                from: fromTime,
+                to: toTime
+            });
+        }
+
+        window.onload = () => {
+            initChart();
+            reloadData(false);
+        };
+    </script>
+</body>
+</html>

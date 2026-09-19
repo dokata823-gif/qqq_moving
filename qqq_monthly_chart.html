@@ -1,0 +1,675 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>QQQ 60월선 이격도 분석 모바일 차트</title>
+    <!-- TradingView Lightweight Charts -->
+    <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Pretendard:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --card-bg: #151a23;
+            --card-border: #232a3b;
+            --text-main: #f0f4f8;
+            --text-sub: #8b98a5;
+            --accent-green: #00e676;
+            --accent-red: #ff5252;
+            --ma-color: #ffb300;
+            --candle-up: #089981;
+            --candle-down: #f23645;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Top Header */
+        header {
+            padding: 12px 16px;
+            background: linear-gradient(180deg, #181e2b 0%, #11151f 100%);
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ticker-badge {
+            background: #2563eb;
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 14px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .header-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .header-sub {
+            font-size: 11px;
+            color: var(--text-sub);
+        }
+
+        .refresh-btn {
+            background: #1e2638;
+            border: 1px solid #2e3b55;
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:active {
+            transform: scale(0.95);
+            background: #2d384e;
+        }
+
+        /* Metrics Display Panel */
+        .metrics-panel {
+            padding: 12px 16px;
+            background-color: var(--card-bg);
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .metrics-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .target-date {
+            font-size: 12px;
+            color: var(--text-sub);
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .target-date .tag {
+            background: rgba(255, 179, 0, 0.15);
+            color: var(--ma-color);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .main-stat-badge {
+            padding: 6px 12px;
+            border-radius: 8px;
+            text-align: right;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .main-stat-badge.plus {
+            background: rgba(0, 230, 118, 0.12);
+            border: 1px solid rgba(0, 230, 118, 0.3);
+            color: var(--accent-green);
+        }
+
+        .main-stat-badge.minus {
+            background: rgba(255, 82, 82, 0.12);
+            border: 1px solid rgba(255, 82, 82, 0.3);
+            color: var(--accent-red);
+        }
+
+        .main-stat-badge.na {
+            background: rgba(139, 152, 165, 0.12);
+            border: 1px solid rgba(139, 152, 165, 0.3);
+            color: var(--text-sub);
+        }
+
+        .stat-label-mini {
+            font-size: 10px;
+            opacity: 0.85;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .stat-val-huge {
+            font-size: 18px;
+            font-weight: 800;
+        }
+
+        /* Metric Grid */
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+        }
+
+        .metric-card {
+            background: #0f131a;
+            border: 1px solid #1c2331;
+            padding: 8px 6px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .metric-card .title {
+            font-size: 10px;
+            color: var(--text-sub);
+            margin-bottom: 3px;
+        }
+
+        .metric-card .value {
+            font-size: 12px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .ohlc-bar {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-sub);
+            background: #0e1219;
+            padding: 6px 10px;
+            border-radius: 6px;
+        }
+
+        .ohlc-bar span b {
+            color: var(--text-main);
+        }
+
+        /* Chart Area */
+        .chart-container-wrap {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            min-height: 440px;
+            background: var(--bg-color);
+        }
+
+        #chart {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Floating Tooltip / Guide */
+        .tap-guide {
+            position: absolute;
+            bottom: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(21, 26, 35, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--card-border);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            color: var(--text-sub);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            z-index: 10;
+        }
+
+        .tap-guide .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--ma-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); opacity: 0.7; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.7; }
+        }
+
+        /* Bottom Controls */
+        .bottom-toolbar {
+            padding: 10px 16px;
+            background-color: var(--card-bg);
+            border-top: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .time-range-group {
+            display: flex;
+            gap: 6px;
+        }
+
+        .time-btn {
+            background: #11151f;
+            border: 1px solid var(--card-border);
+            color: var(--text-sub);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .time-btn.active {
+            background: #2563eb;
+            color: #ffffff;
+            border-color: #2563eb;
+        }
+
+        .legend-indicator {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 11px;
+            color: var(--text-sub);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .legend-color {
+            width: 10px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        /* Loading Overlay */
+        #loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(11, 14, 20, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            gap: 12px;
+        }
+
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid rgba(37, 99, 235, 0.2);
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="header-title-wrap">
+            <span class="ticker-badge">QQQ</span>
+            <div>
+                <div class="header-title">월봉 60선 이격도 분석</div>
+                <div class="header-sub" id="last-updated-text">실시간 데이터 로딩 중...</div>
+            </div>
+        </div>
+        <button class="refresh-btn" id="btn-refresh" onclick="reloadData(true)">
+            <span>🔄</span> 갱신
+        </button>
+    </header>
+
+    <!-- Interactive Metrics Panel -->
+    <section class="metrics-panel">
+        <div class="metrics-top-row">
+            <div>
+                <div class="target-date" id="disp-date">
+                    <span class="tag">선택 월봉</span>
+                    <span id="val-date">--</span>
+                </div>
+                <div style="font-size: 22px; font-weight: 800; font-family: 'JetBrains Mono', monospace; margin-top: 4px;" id="val-close-price">
+                    $0.00
+                </div>
+            </div>
+            <!-- Main requested ratio: Disparity % -->
+            <div class="main-stat-badge na" id="disparity-badge">
+                <span class="stat-label-mini">종가 vs 60월MA 이격률</span>
+                <span class="stat-val-huge" id="val-diff-pct">--%</span>
+            </div>
+        </div>
+
+        <!-- Metric Details Grid -->
+        <div class="metric-grid">
+            <div class="metric-card">
+                <div class="title">60월 이동평균</div>
+                <div class="value" style="color: var(--ma-color);" id="val-ma60">--</div>
+            </div>
+            <div class="metric-card">
+                <div class="title">주가 차이 ($)</div>
+                <div class="value" id="val-diff-dollar">--</div>
+            </div>
+            <div class="metric-card">
+                <div class="title">이격률 (MA기준)</div>
+                <div class="value" id="val-diff-ma-pct">--</div>
+            </div>
+            <div class="metric-card">
+                <div class="title">이격률 (종가기준)</div>
+                <div class="value" id="val-diff-close-pct">--</div>
+            </div>
+        </div>
+
+        <!-- OHLC Summary -->
+        <div class="ohlc-bar">
+            <span>시 <b>$<span id="val-open">--</span></b></span>
+            <span>고 <b style="color: var(--candle-up);">$<span id="val-high">--</span></b></span>
+            <span>저 <b style="color: var(--candle-down);">$<span id="val-low">--</span></b></span>
+            <span>종 <b>$<span id="val-close">--</span></b></span>
+        </div>
+    </section>
+
+    <!-- Main Chart Section -->
+    <main class="chart-container-wrap">
+        <div id="chart"></div>
+        
+        <div class="tap-guide">
+            <div class="dot"></div>
+            <span>차트의 월봉을 터치/클릭하면 60선 이격도가 표시됩니다</span>
+        </div>
+
+        <div id="loading">
+            <div class="spinner"></div>
+            <span style="font-size: 13px; color: var(--text-sub);">QQQ 월봉 데이터 수집 및 60선 계산 중...</span>
+        </div>
+    </main>
+
+    <!-- Bottom Toolbar -->
+    <footer class="bottom-toolbar">
+        <div class="time-range-group">
+            <button class="time-btn" onclick="setRange('all')">전체</button>
+            <button class="time-btn" onclick="setRange('10y')">10년</button>
+            <button class="time-btn" onclick="setRange('5y')">5년</button>
+            <button class="time-btn active" onclick="fitChart()">자동맞춤</button>
+        </div>
+        <div class="legend-indicator">
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--candle-up);"></div>
+                <span>월봉</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: var(--ma-color); height: 2px;"></div>
+                <span>60월 MA</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let chart = null;
+        let candleSeries = null;
+        let ma60Series = null;
+        let statsMap = {};
+        let rawData = null;
+        let latestStat = null;
+
+        function initChart() {
+            const chartContainer = document.getElementById('chart');
+            
+            chart = LightweightCharts.createChart(chartContainer, {
+                layout: {
+                    background: { color: '#0b0e14' },
+                    textColor: '#8b98a5',
+                    fontSize: 11,
+                    fontFamily: 'JetBrains Mono, Pretendard, sans-serif',
+                },
+                grid: {
+                    vertLines: { color: '#161d28', style: LightweightCharts.LineStyle.Dotted },
+                    horzLines: { color: '#161d28', style: LightweightCharts.LineStyle.Dotted },
+                },
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal,
+                    vertLine: {
+                        color: '#ffb300',
+                        width: 1,
+                        style: LightweightCharts.LineStyle.Dashed,
+                        labelBackgroundColor: '#ffb300',
+                    },
+                    horzLine: {
+                        color: '#2563eb',
+                        width: 1,
+                        style: LightweightCharts.LineStyle.Dashed,
+                        labelBackgroundColor: '#2563eb',
+                    },
+                },
+                rightPriceScale: {
+                    borderColor: '#232a3b',
+                    scaleMargins: {
+                        top: 0.1,
+                        bottom: 0.15,
+                    },
+                },
+                timeScale: {
+                    borderColor: '#232a3b',
+                    timeVisible: true,
+                    secondsVisible: false,
+                    fixLeftEdge: true,
+                    fixRightEdge: true,
+                },
+                handleScroll: {
+                    vertTouchDrag: false,
+                },
+            });
+
+            candleSeries = chart.addCandlestickSeries({
+                upColor: '#089981',
+                downColor: '#f23645',
+                borderUpColor: '#089981',
+                borderDownColor: '#f23645',
+                wickUpColor: '#089981',
+                wickDownColor: '#f23645',
+            });
+
+            ma60Series = chart.addLineSeries({
+                color: '#ffb300',
+                lineWidth: 2.5,
+                title: '60M MA',
+                priceLineVisible: false,
+                lastValueVisible: true,
+            });
+
+            chart.subscribeCrosshairMove(param => {
+                if (!param || !param.time) {
+                    if (latestStat) updatePanel(latestStat);
+                    return;
+                }
+                const timeStr = typeof param.time === 'string' ? param.time : `${param.time.year}-${String(param.time.month).padStart(2,'0')}-${String(param.time.day).padStart(2,'0')}`;
+                const stat = statsMap[timeStr];
+                if (stat) {
+                    updatePanel(stat);
+                }
+            });
+
+            window.addEventListener('resize', () => {
+                if (chart) {
+                    chart.applyOptions({
+                        width: chartContainer.clientWidth,
+                        height: chartContainer.clientHeight
+                    });
+                }
+            });
+        }
+
+        function updatePanel(stat) {
+            document.getElementById('val-date').textContent = stat.time;
+            document.getElementById('val-close-price').textContent = `$${stat.close.toFixed(2)}`;
+            document.getElementById('val-open').textContent = stat.open.toFixed(2);
+            document.getElementById('val-high').textContent = stat.high.toFixed(2);
+            document.getElementById('val-low').textContent = stat.low.toFixed(2);
+            document.getElementById('val-close').textContent = stat.close.toFixed(2);
+
+            const badge = document.getElementById('disparity-badge');
+            const diffPctEl = document.getElementById('val-diff-pct');
+            const ma60El = document.getElementById('val-ma60');
+            const diffDollarEl = document.getElementById('val-diff-dollar');
+            const diffMaPctEl = document.getElementById('val-diff-ma-pct');
+            const diffClosePctEl = document.getElementById('val-diff-close-pct');
+
+            if (stat.ma60 !== null && stat.ma60 !== undefined) {
+                ma60El.textContent = `$${stat.ma60.toFixed(2)}`;
+                
+                const diff = stat.diff;
+                const sign = diff >= 0 ? '+' : '';
+                diffDollarEl.textContent = `${sign}$${diff.toFixed(2)}`;
+                diffDollarEl.style.color = diff >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                
+                diffMaPctEl.textContent = `${sign}${stat.diff_pct_ma.toFixed(2)}%`;
+                diffMaPctEl.style.color = diff >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+
+                diffClosePctEl.textContent = `${sign}${stat.diff_pct_close.toFixed(2)}%`;
+                diffClosePctEl.style.color = diff >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+
+                diffPctEl.textContent = `${sign}${stat.diff_pct_ma.toFixed(2)}%`;
+
+                badge.className = 'main-stat-badge ' + (diff >= 0 ? 'plus' : 'minus');
+            } else {
+                ma60El.textContent = '60개월 이전';
+                diffDollarEl.textContent = '--';
+                diffDollarEl.style.color = 'var(--text-sub)';
+                diffMaPctEl.textContent = '--';
+                diffMaPctEl.style.color = 'var(--text-sub)';
+                diffClosePctEl.textContent = '--';
+                diffClosePctEl.style.color = 'var(--text-sub)';
+                diffPctEl.textContent = 'N/A';
+                badge.className = 'main-stat-badge na';
+            }
+        }
+
+        async function reloadData(force = false) {
+            const loading = document.getElementById('loading');
+            loading.style.display = 'flex';
+            try {
+                const res = await fetch(`/api/data${force ? '?force=true' : ''}`);
+                const json = await res.json();
+                if (json.status === 'success') {
+                    renderData(json.data);
+                } else {
+                    alert('데이터 로딩 실패: ' + json.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('서버 연결 오류가 발생했습니다.');
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function renderData(data) {
+            rawData = data;
+            document.getElementById('last-updated-text').textContent = `최근 갱신: ${data.last_updated}`;
+
+            statsMap = {};
+            data.stats.forEach(s => {
+                statsMap[s.time] = s;
+            });
+
+            candleSeries.setData(data.candles);
+            ma60Series.setData(data.ma60);
+
+            if (data.stats.length > 0) {
+                latestStat = data.stats[data.stats.length - 1];
+                updatePanel(latestStat);
+            }
+
+            fitChart();
+        }
+
+        function fitChart() {
+            if (chart) {
+                chart.timeScale().fitContent();
+            }
+        }
+
+        function setRange(range) {
+            if (!rawData || !rawData.candles || rawData.candles.length === 0) return;
+            const len = rawData.candles.length;
+            let fromIndex = 0;
+            if (range === '5y') {
+                fromIndex = Math.max(0, len - 60);
+            } else if (range === '10y') {
+                fromIndex = Math.max(0, len - 120);
+            } else {
+                fromIndex = 0;
+            }
+            const fromTime = rawData.candles[fromIndex].time;
+            const toTime = rawData.candles[len - 1].time;
+            chart.timeScale().setVisibleRange({
+                from: fromTime,
+                to: toTime
+            });
+        }
+
+        window.onload = () => {
+            initChart();
+            reloadData(false);
+        };
+    </script>
+
+    <script>
+        const EMBEDDED_DATA = {"ticker": "QQQ", "name": "Invesco QQQ Trust (Monthly)", "last_updated": "2026-09-19 15:05:22", "candles": [{"time": "1999-03-01", "open": 43.08, "high": 45.66, "low": 40.87, "close": 44.21, "volume": 110048000}, {"time": "1999-04-01", "open": 45.5, "high": 48.27, "low": 41.16, "close": 45.27, "volume": 256366400}, {"time": "1999-05-01", "open": 45.13, "high": 47.19, "low": 41.24, "close": 43.84, "volume": 259300000}, {"time": "1999-06-01", "open": 43.76, "high": 50.51, "low": 41.77, "close": 48.56, "volume": 247872200}, {"time": "1999-07-01", "open": 48.71, "high": 52.01, "low": 47.0, "close": 47.69, "volume": 195790400}, {"time": "1999-08-01", "open": 47.77, "high": 52.03, "low": 44.61, "close": 50.29, "volume": 257880600}, {"time": "1999-09-01", "open": 50.61, "high": 53.72, "low": 49.4, "close": 50.72, "volume": 289632000}, {"time": "1999-10-01", "open": 50.03, "high": 55.82, "low": 48.38, "close": 55.4, "volume": 415435200}, {"time": "1999-11-01", "open": 55.4, "high": 66.38, "low": 54.94, "close": 61.93, "volume": 366819200}, {"time": "1999-12-01", "open": 62.62, "high": 79.0, "low": 62.14, "close": 77.0, "volume": 465355600}, {"time": "2000-01-01", "open": 81.05, "high": 82.26, "low": 67.2, "close": 75.57, "volume": 583431800}, {"time": "2000-02-01", "open": 75.44, "high": 90.58, "low": 74.52, "close": 89.95, "volume": 575169800}, {"time": "2000-03-01", "open": 90.37, "high": 101.54, "low": 85.11, "close": 92.27, "volume": 721106900}, {"time": "2000-04-01", "open": 90.81, "high": 91.95, "low": 65.73, "close": 79.84, "volume": 678411400}, {"time": "2000-05-01", "open": 80.68, "high": 81.63, "low": 60.88, "close": 70.04, "volume": 563189300}, {"time": "2000-06-01", "open": 71.78, "high": 84.03, "low": 69.52, "close": 78.73, "volume": 469516700}, {"time": "2000-07-01", "open": 78.79, "high": 86.0, "low": 72.23, "close": 75.36, "volume": 381758100}, {"time": "2000-08-01", "open": 75.68, "high": 85.95, "low": 70.2, "close": 85.63, "volume": 378312400}, {"time": "2000-09-01", "open": 86.79, "high": 87.23, "low": 73.31, "close": 74.78, "volume": 510706700}, {"time": "2000-10-01", "open": 76.05, "high": 76.05, "low": 62.04, "close": 68.85, "volume": 904925400}, {"time": "2000-11-01", "open": 67.67, "high": 70.89, "low": 50.98, "close": 53.07, "volume": 936207600}, {"time": "2000-12-01", "open": 53.98, "high": 63.01, "low": 45.71, "close": 49.19, "volume": 1087788500}, {"time": "2001-01-01", "open": 49.35, "high": 58.25, "low": 43.95, "close": 54.18, "volume": 1197806700}, {"time": "2001-02-01", "open": 54.39, "high": 55.29, "low": 39.49, "close": 39.98, "volume": 1215871200}, {"time": "2001-03-01", "open": 39.58, "high": 42.69, "low": 32.02, "close": 32.99, "volume": 1724918800}, {"time": "2001-04-01", "open": 33.01, "high": 41.66, "low": 28.31, "close": 38.89, "volume": 1643682200}, {"time": "2001-05-01", "open": 38.93, "high": 43.77, "low": 36.53, "close": 37.69, "volume": 1394690300}, {"time": "2001-06-01", "open": 38.37, "high": 41.7, "low": 34.77, "close": 38.51, "volume": 1363050300}, {"time": "2001-07-01", "open": 38.47, "high": 39.17, "low": 33.12, "close": 35.19, "volume": 1198392500}, {"time": "2001-08-01", "open": 35.92, "high": 37.08, "low": 30.12, "close": 30.87, "volume": 1313411700}, {"time": "2001-09-01", "open": 30.76, "high": 31.6, "low": 22.92, "close": 24.42, "volume": 1302116200}, {"time": "2001-10-01", "open": 24.31, "high": 31.23, "low": 23.47, "close": 28.57, "volume": 2160146800}, {"time": "2001-11-01", "open": 29.02, "high": 34.52, "low": 28.46, "close": 33.41, "volume": 1721098400}, {"time": "2001-12-01", "open": 33.11, "high": 36.44, "low": 32.39, "close": 32.79, "volume": 1277765400}, {"time": "2002-01-01", "open": 33.34, "high": 35.9, "low": 31.05, "close": 32.45, "volume": 1579424600}, {"time": "2002-02-01", "open": 32.36, "high": 32.76, "low": 27.88, "close": 28.46, "volume": 1597517000}, {"time": "2002-03-01", "open": 28.78, "high": 33.02, "low": 28.73, "close": 30.39, "volume": 1551664300}, {"time": "2002-04-01", "open": 30.17, "high": 31.09, "low": 25.75, "close": 26.74, "volume": 1758315600}, {"time": "2002-05-01", "open": 26.69, "high": 28.34, "low": 23.95, "close": 25.31, "volume": 2095742700}, {"time": "2002-06-01", "open": 25.28, "high": 25.49, "low": 20.55, "close": 21.99, "volume": 2262935100}, {"time": "2002-07-01", "open": 21.88, "high": 22.37, "low": 18.23, "close": 20.1, "volume": 2668049100}, {"time": "2002-08-01", "open": 20.0, "high": 22.09, "low": 17.95, "close": 19.79, "volume": 2043810200}, {"time": "2002-09-01", "open": 19.43, "high": 20.52, "low": 17.27, "close": 17.46, "volume": 1669047400}, {"time": "2002-10-01", "open": 17.62, "high": 21.1, "low": 16.65, "close": 20.69, "volume": 2129150100}, {"time": "2002-11-01", "open": 20.54, "high": 23.84, "low": 20.34, "close": 23.36, "volume": 1669954700}, {"time": "2002-12-01", "open": 23.95, "high": 24.26, "low": 20.46, "close": 20.54, "volume": 1397055800}, {"time": "2003-01-01", "open": 20.83, "high": 23.15, "low": 20.23, "close": 20.59, "volume": 1513988000}, {"time": "2003-02-01", "open": 20.66, "high": 21.38, "low": 19.65, "close": 21.2, "volume": 1276622500}, {"time": "2003-03-01", "open": 21.29, "high": 23.07, "low": 19.84, "close": 21.28, "volume": 1670716200}, {"time": "2003-04-01", "open": 21.44, "high": 23.64, "low": 21.28, "close": 23.13, "volume": 1411620800}, {"time": "2003-05-01", "open": 23.12, "high": 25.17, "low": 22.91, "close": 25.1, "volume": 1525708300}, {"time": "2003-06-01", "open": 25.35, "high": 26.52, "low": 24.7, "close": 25.24, "volume": 1799755700}, {"time": "2003-07-01", "open": 25.03, "high": 27.6, "low": 24.66, "close": 26.8, "volume": 1821510200}, {"time": "2003-08-01", "open": 26.7, "high": 28.19, "low": 25.22, "close": 28.14, "volume": 1414186200}, {"time": "2003-09-01", "open": 28.22, "high": 29.37, "low": 27.27, "close": 27.32, "volume": 1904565100}, {"time": "2003-10-01", "open": 27.48, "high": 30.33, "low": 27.32, "close": 29.64, "volume": 1912564700}, {"time": "2003-11-01", "open": 29.85, "high": 30.49, "low": 28.42, "close": 29.81, "volume": 1497010400}, {"time": "2003-12-01", "open": 30.1, "high": 30.89, "low": 28.77, "close": 30.73, "volume": 1740828600}, {"time": "2004-01-01", "open": 30.9, "high": 32.88, "low": 30.53, "close": 31.25, "volume": 1759300400}, {"time": "2004-02-01", "open": 31.36, "high": 32.01, "low": 30.43, "close": 30.83, "volume": 1728110800}, {"time": "2004-03-01", "open": 30.92, "high": 31.34, "low": 28.67, "close": 30.21, "volume": 2509465300}, {"time": "2004-04-01", "open": 30.19, "high": 31.61, "low": 29.27, "close": 29.31, "volume": 2211173100}, {"time": "2004-05-01", "open": 29.5, "high": 30.81, "low": 28.75, "close": 30.81, "volume": 2429662200}, {"time": "2004-06-01", "open": 30.57, "high": 31.95, "low": 30.19, "close": 31.81, "volume": 1811072200}, {"time": "2004-07-01", "open": 31.75, "high": 31.75, "low": 28.41, "close": 29.41, "volume": 2262048100}, {"time": "2004-08-01", "open": 29.17, "high": 29.52, "low": 27.27, "close": 28.68, "volume": 2012635000}, {"time": "2004-09-01", "open": 28.6, "high": 30.22, "low": 28.49, "close": 29.62, "volume": 1951089100}, {"time": "2004-10-01", "open": 29.88, "high": 31.39, "low": 29.67, "close": 31.11, "volume": 2259101600}, {"time": "2004-11-01", "open": 31.17, "high": 33.42, "low": 31.02, "close": 32.98, "volume": 1978225300}, {"time": "2004-12-01", "open": 33.42, "high": 34.62, "low": 33.27, "close": 33.97, "volume": 1779424600}, {"time": "2005-01-01", "open": 34.12, "high": 34.29, "low": 31.03, "close": 31.83, "volume": 2234773200}, {"time": "2005-02-01", "open": 31.91, "high": 32.75, "low": 31.23, "close": 31.68, "volume": 1765610600}, {"time": "2005-03-01", "open": 31.8, "high": 32.59, "low": 30.59, "close": 31.12, "volume": 2133973700}, {"time": "2005-04-01", "open": 31.34, "high": 31.55, "low": 29.23, "close": 29.77, "volume": 2345433600}, {"time": "2005-05-01", "open": 29.87, "high": 32.57, "low": 29.69, "close": 32.41, "volume": 1881340000}, {"time": "2005-06-01", "open": 32.39, "high": 32.95, "low": 31.26, "close": 31.33, "volume": 1943627500}, {"time": "2005-07-01", "open": 31.4, "high": 34.0, "low": 31.13, "close": 33.72, "volume": 1620613000}, {"time": "2005-08-01", "open": 33.77, "high": 34.19, "low": 32.59, "close": 33.2, "volume": 1714890300}, {"time": "2005-09-01", "open": 33.22, "high": 34.0, "low": 32.57, "close": 33.61, "volume": 1676662500}, {"time": "2005-10-01", "open": 33.68, "high": 33.97, "low": 31.8, "close": 33.11, "volume": 2279169700}, {"time": "2005-11-01", "open": 33.03, "high": 35.79, "low": 32.97, "close": 35.13, "volume": 1718491700}, {"time": "2005-12-01", "open": 35.44, "high": 36.13, "low": 34.46, "close": 34.51, "volume": 1416706400}, {"time": "2006-01-01", "open": 34.71, "high": 36.98, "low": 34.29, "close": 35.86, "volume": 1968905800}, {"time": "2006-02-01", "open": 35.64, "high": 36.01, "low": 34.38, "close": 35.09, "volume": 1646562100}, {"time": "2006-03-01", "open": 35.23, "high": 36.14, "low": 34.34, "close": 35.83, "volume": 2185862300}, {"time": "2006-04-01", "open": 36.02, "high": 36.79, "low": 35.37, "close": 35.76, "volume": 1763904700}, {"time": "2006-05-01", "open": 35.82, "high": 36.13, "low": 32.67, "close": 33.17, "volume": 2709535300}, {"time": "2006-06-01", "open": 33.29, "high": 34.2, "low": 31.77, "close": 33.15, "volume": 3052135000}, {"time": "2006-07-01", "open": 33.25, "high": 33.35, "low": 30.39, "close": 31.72, "volume": 2462886000}, {"time": "2006-08-01", "open": 31.44, "high": 33.37, "low": 31.0, "close": 33.24, "volume": 2281929100}, {"time": "2006-09-01", "open": 33.43, "high": 35.03, "low": 32.78, "close": 34.78, "volume": 2234461000}, {"time": "2006-10-01", "open": 34.74, "high": 36.72, "low": 34.12, "close": 36.43, "volume": 2410484000}, {"time": "2006-11-01", "open": 36.56, "high": 38.38, "low": 35.6, "close": 37.68, "volume": 2370363000}, {"time": "2006-12-01", "open": 37.69, "high": 38.34, "low": 36.73, "close": 36.97, "volume": 1898275500}, {"time": "2007-01-01", "open": 37.23, "high": 38.89, "low": 36.42, "close": 37.75, "volume": 2620557700}, {"time": "2007-02-01", "open": 37.92, "high": 39.02, "low": 36.77, "close": 37.12, "volume": 2394303300}, {"time": "2007-03-01", "open": 36.47, "high": 38.1, "low": 36.05, "close": 37.31, "volume": 2886831700}, {"time": "2007-04-01", "open": 37.43, "high": 40.03, "low": 37.11, "close": 39.39, "volume": 1840448700}, {"time": "2007-05-01", "open": 39.4, "high": 40.73, "low": 39.14, "close": 40.64, "volume": 2575501900}, {"time": "2007-06-01", "open": 40.81, "high": 41.11, "low": 39.6, "close": 40.83, "volume": 2815209900}, {"time": "2007-07-01", "open": 40.93, "high": 43.46, "low": 40.69, "close": 40.77, "volume": 2780452500}, {"time": "2007-08-01", "open": 40.65, "high": 42.08, "low": 38.08, "close": 41.92, "volume": 3835583500}, {"time": "2007-09-01", "open": 41.99, "high": 44.35, "low": 41.03, "close": 44.12, "volume": 1980639900}, {"time": "2007-10-01", "open": 44.16, "high": 47.26, "low": 44.06, "close": 47.23, "volume": 3400285100}, {"time": "2007-11-01", "open": 46.93, "high": 47.01, "low": 41.75, "close": 44.04, "volume": 4567776300}, {"time": "2007-12-01", "open": 43.89, "high": 45.4, "low": 42.25, "close": 44.01, "volume": 2233867700}, {"time": "2008-01-01", "open": 44.05, "high": 44.22, "low": 35.75, "close": 38.77, "volume": 4828694600}, {"time": "2008-02-01", "open": 39.09, "high": 39.42, "low": 36.21, "close": 36.9, "volume": 3020516600}, {"time": "2008-03-01", "open": 36.9, "high": 38.75, "low": 35.3, "close": 37.59, "volume": 3404279700}, {"time": "2008-04-01", "open": 38.19, "high": 41.32, "low": 37.56, "close": 40.59, "volume": 2616810900}, {"time": "2008-05-01", "open": 40.61, "high": 43.39, "low": 40.6, "close": 43.0, "volume": 2682797700}, {"time": "2008-06-01", "open": 42.95, "high": 43.55, "low": 38.69, "close": 38.86, "volume": 3542909100}, {"time": "2008-07-01", "open": 38.55, "high": 39.71, "low": 37.26, "close": 39.11, "volume": 3953264300}, {"time": "2008-08-01", "open": 39.16, "high": 41.79, "low": 38.12, "close": 39.68, "volume": 2893866300}, {"time": "2008-09-01", "open": 40.35, "high": 40.54, "low": 32.01, "close": 33.5, "volume": 5188670400}, {"time": "2008-10-01", "open": 33.44, "high": 33.55, "low": 24.19, "close": 28.32, "volume": 7240779800}, {"time": "2008-11-01", "open": 28.25, "high": 29.28, "low": 21.57, "close": 25.07, "volume": 3919285900}, {"time": "2008-12-01", "open": 24.57, "high": 26.58, "low": 23.14, "close": 25.64, "volume": 2944238700}, {"time": "2009-01-01", "open": 25.65, "high": 27.27, "low": 24.11, "close": 25.06, "volume": 2829542600}, {"time": "2009-02-01", "open": 24.82, "high": 27.32, "low": 23.62, "close": 23.74, "volume": 3324074200}, {"time": "2009-03-01", "open": 23.42, "high": 27.17, "low": 22.14, "close": 26.19, "volume": 3805123800}, {"time": "2009-04-01", "open": 25.86, "high": 30.14, "low": 25.73, "close": 29.61, "volume": 2991632100}, {"time": "2009-05-01", "open": 29.6, "high": 30.66, "low": 28.47, "close": 30.56, "volume": 2734076200}, {"time": "2009-06-01", "open": 30.92, "high": 32.19, "low": 30.07, "close": 31.46, "volume": 2511948000}, {"time": "2009-07-01", "open": 31.61, "high": 34.74, "low": 29.66, "close": 34.11, "volume": 2575607800}, {"time": "2009-08-01", "open": 34.48, "high": 35.52, "low": 33.26, "close": 34.62, "volume": 2248149500}, {"time": "2009-09-01", "open": 34.53, "high": 37.37, "low": 33.77, "close": 36.57, "volume": 2114774900}, {"time": "2009-10-01", "open": 36.44, "high": 37.93, "low": 35.25, "close": 35.45, "volume": 2291065900}, {"time": "2009-11-01", "open": 35.49, "high": 38.65, "low": 35.18, "close": 37.7, "volume": 1807922400}, {"time": "2009-12-01", "open": 38.05, "high": 40.14, "low": 37.56, "close": 39.67, "volume": 1524036700}, {"time": "2010-01-01", "open": 40.17, "high": 40.44, "low": 36.96, "close": 37.1, "volume": 2382152500}, {"time": "2010-02-01", "open": 37.19, "high": 39.06, "low": 36.52, "close": 38.81, "volume": 1932176400}, {"time": "2010-03-01", "open": 39.02, "high": 42.18, "low": 39.01, "close": 41.8, "volume": 1623606900}, {"time": "2010-04-01", "open": 41.97, "high": 43.96, "low": 41.48, "close": 42.74, "volume": 1701457500}, {"time": "2010-05-01", "open": 42.92, "high": 43.54, "low": 37.01, "close": 39.58, "volume": 2952228100}, {"time": "2010-06-01", "open": 39.58, "high": 41.54, "low": 37.15, "close": 37.21, "volume": 2058088600}, {"time": "2010-07-01", "open": 37.33, "high": 40.71, "low": 36.39, "close": 39.91, "volume": 1748673600}, {"time": "2010-08-01", "open": 40.42, "high": 41.12, "low": 37.44, "close": 37.87, "volume": 1483278100}, {"time": "2010-09-01", "open": 38.51, "high": 43.53, "low": 38.49, "close": 42.85, "volume": 1574743200}, {"time": "2010-10-01", "open": 43.21, "high": 45.84, "low": 42.09, "close": 45.57, "volume": 1538354800}, {"time": "2010-11-01", "open": 45.74, "high": 47.19, "low": 44.41, "close": 45.49, "volume": 1564994700}, {"time": "2010-12-01", "open": 46.26, "high": 48.09, "low": 46.24, "close": 47.66, "volume": 1006766900}, {"time": "2011-01-01", "open": 48.1, "high": 50.18, "low": 48.06, "close": 49.0, "volume": 1265608600}, {"time": "2011-02-01", "open": 49.37, "high": 51.66, "low": 49.12, "close": 50.55, "volume": 1101561900}, {"time": "2011-03-01", "open": 50.84, "high": 51.15, "low": 47.12, "close": 50.33, "volume": 1729243300}, {"time": "2011-04-01", "open": 50.58, "high": 51.96, "low": 48.48, "close": 51.77, "volume": 1032891200}, {"time": "2011-05-01", "open": 51.85, "high": 52.0, "low": 49.48, "close": 51.14, "volume": 1054622500}, {"time": "2011-06-01", "open": 51.13, "high": 51.26, "low": 47.09, "close": 50.1, "volume": 1155628500}, {"time": "2011-07-01", "open": 50.13, "high": 52.55, "low": 49.95, "close": 50.94, "volume": 1277418400}, {"time": "2011-08-01", "open": 51.55, "high": 51.66, "low": 43.85, "close": 48.36, "volume": 2526145600}, {"time": "2011-09-01", "open": 48.57, "high": 50.46, "low": 45.68, "close": 46.19, "volume": 1666877800}, {"time": "2011-10-01", "open": 45.77, "high": 52.09, "low": 44.08, "close": 50.99, "volume": 1616785100}, {"time": "2011-11-01", "open": 49.73, "high": 51.9, "low": 46.52, "close": 49.62, "volume": 1295070500}, {"time": "2011-12-01", "open": 49.8, "high": 50.89, "low": 47.85, "close": 49.31, "volume": 1004361600}, {"time": "2012-01-01", "open": 50.27, "high": 53.76, "low": 49.96, "close": 53.46, "volume": 828883900}, {"time": "2012-02-01", "open": 53.77, "high": 57.38, "low": 53.58, "close": 56.89, "volume": 1018602500}, {"time": "2012-03-01", "open": 57.2, "high": 60.61, "low": 55.94, "close": 59.77, "volume": 1070054300}, {"time": "2012-04-01", "open": 59.7, "high": 60.65, "low": 57.02, "close": 59.07, "volume": 1056184900}, {"time": "2012-05-01", "open": 59.0, "high": 59.84, "low": 53.76, "close": 54.91, "volume": 1300328800}, {"time": "2012-06-01", "open": 54.04, "high": 57.26, "low": 53.24, "close": 56.9, "volume": 973815200}, {"time": "2012-07-01", "open": 56.98, "high": 57.92, "low": 54.86, "close": 57.46, "volume": 860805100}, {"time": "2012-08-01", "open": 57.87, "high": 61.08, "low": 56.67, "close": 60.44, "volume": 679866200}, {"time": "2012-09-01", "open": 60.5, "high": 62.77, "low": 59.96, "close": 60.98, "volume": 639521900}, {"time": "2012-10-01", "open": 61.27, "high": 62.07, "low": 57.49, "close": 57.76, "volume": 863124200}, {"time": "2012-11-01", "open": 58.13, "high": 58.88, "low": 54.52, "close": 58.52, "volume": 901783900}, {"time": "2012-12-01", "open": 59.3, "high": 59.7, "low": 56.86, "close": 58.24, "volume": 815856000}, {"time": "2013-01-01", "open": 59.67, "high": 60.62, "low": 59.17, "close": 59.8, "volume": 741836700}, {"time": "2013-02-01", "open": 60.22, "high": 61.04, "low": 58.99, "close": 60.01, "volume": 656562100}, {"time": "2013-03-01", "open": 59.94, "high": 61.9, "low": 59.64, "close": 61.82, "volume": 557979300}, {"time": "2013-04-01", "open": 61.87, "high": 63.4, "low": 59.95, "close": 63.39, "volume": 835537700}, {"time": "2013-05-01", "open": 63.41, "high": 67.18, "low": 62.97, "close": 65.66, "volume": 680414200}, {"time": "2013-06-01", "open": 65.87, "high": 66.38, "low": 62.18, "close": 64.08, "volume": 748561600}, {"time": "2013-07-01", "open": 64.52, "high": 68.53, "low": 64.16, "close": 68.13, "volume": 581695700}, {"time": "2013-08-01", "open": 68.6, "high": 69.49, "low": 67.4, "close": 67.86, "volume": 529245500}, {"time": "2013-09-01", "open": 68.62, "high": 71.87, "low": 68.13, "close": 71.14, "volume": 503988800}, {"time": "2013-10-01", "open": 71.15, "high": 75.3, "low": 68.86, "close": 74.67, "volume": 817353700}, {"time": "2013-11-01", "open": 74.92, "high": 77.42, "low": 73.39, "close": 77.32, "volume": 542339400}, {"time": "2013-12-01", "open": 77.65, "high": 79.58, "low": 76.04, "close": 79.58, "volume": 651649200}, {"time": "2014-01-01", "open": 79.21, "high": 80.52, "low": 76.69, "close": 78.05, "volume": 831732700}, {"time": "2014-02-01", "open": 78.23, "high": 82.64, "low": 76.08, "close": 82.07, "volume": 713558700}, {"time": "2014-03-01", "open": 81.49, "high": 83.19, "low": 78.67, "close": 79.83, "volume": 809345400}, {"time": "2014-04-01", "open": 80.22, "high": 81.66, "low": 75.83, "close": 79.58, "volume": 1141398200}, {"time": "2014-05-01", "open": 79.7, "high": 83.27, "low": 77.88, "close": 83.14, "volume": 789193700}, {"time": "2014-06-01", "open": 83.47, "high": 85.95, "low": 82.76, "close": 85.74, "volume": 567012900}, {"time": "2014-07-01", "open": 86.04, "high": 89.03, "low": 85.49, "close": 86.76, "volume": 661530400}, {"time": "2014-08-01", "open": 86.57, "high": 91.22, "low": 85.72, "close": 91.1, "volume": 645904700}, {"time": "2014-09-01", "open": 91.54, "high": 92.03, "low": 89.41, "close": 90.41, "volume": 755958700}, {"time": "2014-10-01", "open": 90.16, "high": 93.12, "low": 82.59, "close": 92.8, "volume": 1285037500}, {"time": "2014-11-01", "open": 92.97, "high": 97.24, "low": 92.13, "close": 97.02, "volume": 434990100}, {"time": "2014-12-01", "open": 97.11, "high": 97.3, "low": 91.79, "close": 94.85, "volume": 815702200}, {"time": "2015-01-01", "open": 95.31, "high": 96.07, "low": 91.27, "close": 92.87, "volume": 826291600}, {"time": "2015-02-01", "open": 93.08, "high": 100.07, "low": 91.63, "close": 99.58, "volume": 472456500}, {"time": "2015-03-01", "open": 100.0, "high": 100.74, "low": 95.98, "close": 97.23, "volume": 633635600}, {"time": "2015-04-01", "open": 97.23, "high": 102.35, "low": 96.07, "close": 99.1, "volume": 568699300}, {"time": "2015-05-01", "open": 99.48, "high": 102.27, "low": 97.6, "close": 101.32, "volume": 518233500}, {"time": "2015-06-01", "open": 102.1, "high": 102.55, "low": 98.41, "close": 98.81, "volume": 577030600}, {"time": "2015-07-01", "open": 99.79, "high": 105.56, "low": 97.66, "close": 103.31, "volume": 644885700}, {"time": "2015-08-01", "open": 103.33, "high": 104.28, "low": 78.2, "close": 96.26, "volume": 1010304800}, {"time": "2015-09-01", "open": 94.09, "high": 100.58, "low": 91.35, "close": 94.14, "volume": 881201500}, {"time": "2015-10-01", "open": 94.3, "high": 105.53, "low": 92.95, "close": 104.84, "volume": 740627200}, {"time": "2015-11-01", "open": 105.12, "high": 106.82, "low": 101.28, "close": 105.48, "volume": 543413300}, {"time": "2015-12-01", "open": 106.23, "high": 107.41, "low": 101.49, "close": 103.8, "volume": 757497500}, {"time": "2016-01-01", "open": 101.56, "high": 102.24, "low": 90.24, "close": 96.62, "volume": 1077308200}, {"time": "2016-02-01", "open": 96.16, "high": 97.24, "low": 88.0, "close": 95.11, "volume": 942259600}, {"time": "2016-03-01", "open": 96.3, "high": 102.41, "low": 96.01, "close": 101.63, "volume": 601605100}, {"time": "2016-04-01", "open": 101.01, "high": 103.71, "low": 97.61, "close": 98.39, "volume": 559253800}, {"time": "2016-05-01", "open": 98.64, "high": 102.85, "low": 97.16, "close": 102.69, "volume": 536482700}, {"time": "2016-06-01", "open": 102.65, "high": 103.34, "low": 94.95, "close": 100.35, "volume": 577926300}, {"time": "2016-07-01", "open": 100.3, "high": 107.81, "low": 99.44, "close": 107.53, "volume": 421072600}, {"time": "2016-08-01", "open": 107.6, "high": 110.12, "low": 106.58, "close": 108.65, "volume": 369269900}, {"time": "2016-09-01", "open": 108.96, "high": 111.53, "low": 106.3, "close": 111.06, "volume": 540756600}, {"time": "2016-10-01", "open": 110.92, "high": 111.94, "low": 108.46, "close": 109.44, "volume": 406941800}, {"time": "2016-11-01", "open": 109.63, "high": 111.8, "low": 106.13, "close": 109.92, "volume": 598118800}, {"time": "2016-12-01", "open": 110.21, "high": 114.02, "low": 108.1, "close": 111.16, "volume": 498414300}, {"time": "2017-01-01", "open": 111.9, "high": 118.14, "low": 111.55, "close": 116.88, "volume": 366254600}, {"time": "2017-02-01", "open": 117.7, "high": 122.63, "low": 117.15, "close": 121.99, "volume": 307437600}, {"time": "2017-03-01", "open": 123.02, "high": 124.8, "low": 121.66, "close": 124.46, "volume": 442963500}, {"time": "2017-04-01", "open": 124.57, "high": 128.19, "low": 122.58, "close": 127.86, "volume": 388248100}, {"time": "2017-05-01", "open": 128.28, "high": 133.36, "low": 127.74, "close": 132.84, "volume": 532489700}, {"time": "2017-06-01", "open": 133.48, "high": 135.66, "low": 128.45, "close": 129.76, "volume": 1046003200}, {"time": "2017-07-01", "open": 130.35, "high": 137.6, "low": 128.03, "close": 135.03, "volume": 705002300}, {"time": "2017-08-01", "open": 135.49, "high": 137.84, "low": 132.16, "close": 137.83, "volume": 810771900}, {"time": "2017-09-01", "open": 138.31, "high": 138.5, "low": 134.26, "close": 137.42, "volume": 631562000}, {"time": "2017-10-01", "open": 137.63, "high": 143.96, "low": 136.93, "close": 143.75, "volume": 549094600}, {"time": "2017-11-01", "open": 144.33, "high": 148.04, "low": 142.45, "close": 146.59, "volume": 584198400}, {"time": "2017-12-01", "open": 146.0, "high": 150.32, "low": 143.97, "close": 147.47, "volume": 622383900}, {"time": "2018-01-01", "open": 148.23, "high": 161.85, "low": 147.86, "close": 160.39, "volume": 698394900}, {"time": "2018-02-01", "open": 159.16, "high": 161.65, "low": 142.14, "close": 158.31, "volume": 1179841200}, {"time": "2018-03-01", "open": 158.66, "high": 166.16, "low": 147.98, "close": 151.86, "volume": 1085306700}, {"time": "2018-04-01", "open": 150.77, "high": 158.37, "low": 145.93, "close": 152.62, "volume": 987380500}, {"time": "2018-05-01", "open": 152.23, "high": 162.35, "low": 150.99, "close": 161.28, "volume": 687987000}, {"time": "2018-06-01", "open": 162.44, "high": 169.14, "low": 160.77, "close": 163.13, "volume": 784338500}, {"time": "2018-07-01", "open": 161.6, "high": 173.85, "low": 161.25, "close": 167.69, "volume": 708010500}, {"time": "2018-08-01", "open": 168.08, "high": 178.21, "low": 167.06, "close": 177.38, "volume": 667523000}, {"time": "2018-09-01", "open": 177.16, "high": 177.55, "low": 171.79, "close": 176.88, "volume": 645534400}, {"time": "2018-10-01", "open": 177.91, "high": 178.54, "low": 152.42, "close": 161.68, "volume": 1817070600}, {"time": "2018-11-01", "open": 161.92, "high": 167.16, "low": 149.6, "close": 161.25, "volume": 1152121500}, {"time": "2018-12-01", "open": 165.28, "high": 165.48, "low": 136.97, "close": 147.29, "volume": 1395544900}, {"time": "2019-01-01", "open": 144.16, "high": 161.35, "low": 142.73, "close": 160.56, "volume": 933706500}, {"time": "2019-02-01", "open": 159.77, "high": 166.76, "low": 159.04, "close": 165.36, "volume": 535964100}, {"time": "2019-03-01", "open": 166.86, "high": 174.88, "low": 161.98, "close": 171.85, "volume": 781972700}, {"time": "2019-04-01", "open": 173.62, "high": 183.0, "low": 172.91, "close": 181.3, "volume": 550157700}, {"time": "2019-05-01", "open": 182.49, "high": 183.0, "low": 166.31, "close": 166.39, "volume": 901554000}, {"time": "2019-06-01", "open": 166.31, "high": 181.92, "low": 162.27, "close": 179.02, "volume": 688730400}, {"time": "2019-07-01", "open": 182.45, "high": 187.46, "low": 180.59, "close": 183.2, "volume": 494025500}, {"time": "2019-08-01", "open": 183.51, "high": 186.92, "low": 171.79, "close": 179.72, "volume": 814286500}, {"time": "2019-09-01", "open": 178.88, "high": 187.03, "low": 177.74, "close": 181.37, "volume": 550650200}, {"time": "2019-10-01", "open": 182.03, "high": 190.03, "low": 174.65, "close": 189.31, "volume": 576983400}, {"time": "2019-11-01", "open": 190.13, "high": 197.93, "low": 189.84, "close": 197.01, "volume": 351429700}, {"time": "2019-12-01", "open": 197.45, "high": 206.55, "low": 191.79, "close": 204.67, "volume": 429951100}, {"time": "2020-01-01", "open": 206.39, "high": 217.45, "low": 204.32, "close": 210.89, "volume": 585493000}, {"time": "2020-02-01", "open": 211.92, "high": 228.6, "low": 190.77, "close": 198.12, "volume": 952392300}, {"time": "2020-03-01", "open": 201.51, "high": 211.86, "low": 159.11, "close": 183.68, "volume": 2191775700}, {"time": "2020-04-01", "open": 178.25, "high": 212.28, "low": 174.48, "close": 211.19, "volume": 1092071200}, {"time": "2020-05-01", "open": 206.93, "high": 225.36, "low": 203.67, "close": 225.13, "volume": 846592000}, {"time": "2020-06-01", "open": 224.65, "high": 242.71, "low": 223.69, "close": 239.28, "volume": 928360400}, {"time": "2020-07-01", "open": 239.32, "high": 260.72, "low": 238.78, "close": 256.86, "volume": 924935100}, {"time": "2020-08-01", "open": 258.99, "high": 286.78, "low": 255.74, "close": 284.97, "volume": 701414600}, {"time": "2020-09-01", "open": 287.62, "high": 293.3, "low": 251.37, "close": 268.5, "volume": 1325374300}, {"time": "2020-10-01", "open": 272.32, "high": 287.46, "low": 258.09, "close": 260.33, "volume": 936826500}, {"time": "2020-11-01", "open": 262.71, "high": 290.08, "low": 258.0, "close": 289.55, "volume": 751645800}, {"time": "2020-12-01", "open": 292.35, "high": 304.66, "low": 288.59, "close": 303.74, "volume": 569870600}, {"time": "2021-01-01", "open": 305.07, "high": 319.8, "low": 295.46, "close": 304.54, "volume": 655263000}, {"time": "2021-02-01", "open": 307.98, "high": 327.42, "low": 300.98, "close": 304.13, "volume": 795468600}, {"time": "2021-03-01", "open": 309.49, "high": 314.39, "low": 288.34, "close": 309.35, "volume": 1621173600}, {"time": "2021-04-01", "open": 313.17, "high": 332.3, "low": 312.92, "close": 327.64, "volume": 771139800}, {"time": "2021-05-01", "open": 328.84, "high": 329.58, "low": 306.32, "close": 323.7, "volume": 965410800}, {"time": "2021-06-01", "open": 325.41, "high": 344.75, "low": 318.59, "close": 343.97, "volume": 751288500}, {"time": "2021-07-01", "open": 343.62, "high": 358.0, "low": 341.65, "close": 353.81, "volume": 813285700}, {"time": "2021-08-01", "open": 355.47, "high": 369.52, "low": 349.34, "close": 368.74, "volume": 683466500}, {"time": "2021-09-01", "open": 370.21, "high": 371.9, "low": 346.95, "close": 347.78, "volume": 931849900}, {"time": "2021-10-01", "open": 348.4, "high": 375.3, "low": 340.36, "close": 375.13, "volume": 878747900}, {"time": "2021-11-01", "open": 375.57, "high": 397.09, "low": 373.49, "close": 382.62, "volume": 922244500}, {"time": "2021-12-01", "open": 387.45, "high": 393.58, "low": 367.21, "close": 387.03, "volume": 1232817200}, {"time": "2022-01-01", "open": 388.2, "high": 391.34, "low": 325.06, "close": 353.18, "volume": 1847203000}, {"time": "2022-02-01", "open": 354.52, "high": 360.04, "low": 309.61, "close": 337.37, "volume": 1522923600}, {"time": "2022-03-01", "open": 336.76, "high": 362.17, "low": 309.2, "close": 353.12, "volume": 1686792800}, {"time": "2022-04-01", "open": 353.38, "high": 359.71, "low": 304.48, "close": 305.11, "volume": 1501959100}, {"time": "2022-05-01", "open": 304.7, "high": 321.71, "low": 272.93, "close": 300.27, "volume": 1951162500}, {"time": "2022-06-01", "open": 302.98, "high": 306.97, "low": 262.79, "close": 273.52, "volume": 1359608000}, {"time": "2022-07-01", "open": 272.22, "high": 308.76, "low": 270.08, "close": 307.85, "volume": 1178025500}, {"time": "2022-08-01", "open": 306.09, "high": 326.35, "low": 291.24, "close": 292.05, "volume": 1069920100}, {"time": "2022-09-01", "open": 290.08, "high": 304.12, "low": 261.13, "close": 261.28, "volume": 1370988700}, {"time": "2022-10-01", "open": 263.05, "high": 278.23, "low": 248.57, "close": 271.73, "volume": 1356809000}, {"time": "2022-11-01", "open": 275.2, "high": 286.91, "low": 253.29, "close": 286.8, "volume": 1195762800}, {"time": "2022-12-01", "open": 287.81, "high": 290.94, "low": 254.53, "close": 260.95, "volume": 1057037700}, {"time": "2023-01-01", "open": 263.27, "high": 292.29, "low": 255.13, "close": 288.72, "volume": 961927300}, {"time": "2023-02-01", "open": 288.51, "high": 307.4, "low": 284.24, "close": 287.68, "volume": 1094424800}, {"time": "2023-03-01", "open": 287.83, "high": 315.23, "low": 279.91, "close": 314.99, "volume": 1544782600}, {"time": "2023-04-01", "open": 312.87, "high": 316.68, "low": 304.15, "close": 316.59, "volume": 993554700}, {"time": "2023-05-01", "open": 316.13, "high": 347.38, "low": 309.29, "close": 341.55, "volume": 1149238500}, {"time": "2023-06-01", "open": 341.76, "high": 366.45, "low": 340.71, "close": 363.08, "volume": 1137978700}, {"time": "2023-07-01", "open": 363.72, "high": 381.32, "low": 357.17, "close": 377.1, "volume": 975077400}, {"time": "2023-08-01", "open": 375.75, "high": 376.98, "low": 348.62, "close": 371.5, "volume": 1202289000}, {"time": "2023-09-01", "open": 374.41, "high": 374.84, "low": 345.83, "close": 352.63, "volume": 960022300}, {"time": "2023-10-01", "open": 352.9, "high": 367.86, "low": 336.96, "close": 345.35, "volume": 1238704200}, {"time": "2023-11-01", "open": 346.18, "high": 387.94, "low": 346.09, "close": 382.71, "volume": 971360500}, {"time": "2023-12-01", "open": 382.61, "high": 407.45, "low": 377.59, "close": 404.09, "volume": 867698300}, {"time": "2024-01-01", "open": 400.46, "high": 424.15, "low": 390.1, "close": 411.44, "volume": 973043500}, {"time": "2024-02-01", "open": 413.24, "high": 434.75, "low": 412.27, "close": 433.18, "volume": 865903700}, {"time": "2024-03-01", "open": 434.64, "high": 443.97, "low": 427.57, "close": 438.7, "volume": 905018600}, {"time": "2024-04-01", "open": 439.65, "high": 442.18, "low": 408.13, "close": 419.52, "volume": 1066502500}, {"time": "2024-05-01", "open": 418.09, "high": 455.08, "low": 415.6, "close": 445.32, "volume": 730428700}, {"time": "2024-06-01", "open": 449.85, "high": 482.14, "low": 443.25, "close": 474.14, "volume": 548332200}, {"time": "2024-07-01", "open": 475.06, "high": 498.29, "low": 449.44, "close": 466.18, "volume": 801528400}, {"time": "2024-08-01", "open": 466.86, "high": 480.5, "low": 419.06, "close": 471.33, "volume": 908585600}, {"time": "2024-09-01", "open": 466.43, "high": 489.26, "low": 444.16, "close": 483.68, "volume": 694688500}, {"time": "2024-10-01", "open": 483.32, "high": 496.84, "low": 473.11, "close": 479.5, "volume": 660176300}, {"time": "2024-11-01", "open": 481.14, "high": 510.95, "low": 479.9, "close": 505.16, "volume": 567617900}, {"time": "2024-12-01", "open": 507.23, "high": 535.17, "low": 505.53, "close": 507.45, "volume": 627410500}, {"time": "2025-01-01", "open": 510.5, "high": 529.88, "low": 496.01, "close": 518.43, "volume": 677012800}, {"time": "2025-02-01", "open": 509.68, "high": 536.81, "low": 493.26, "close": 504.41, "volume": 585211300}, {"time": "2025-03-01", "open": 508.5, "high": 510.01, "low": 454.63, "close": 466.15, "volume": 981927300}, {"time": "2025-04-01", "open": 464.54, "high": 476.73, "low": 400.01, "close": 472.66, "volume": 1366190800}, {"time": "2025-05-01", "open": 480.55, "high": 523.37, "low": 473.96, "close": 516.04, "volume": 993265800}, {"time": "2025-06-01", "open": 514.76, "high": 550.15, "low": 513.5, "close": 549.0, "volume": 924943900}, {"time": "2025-07-01", "open": 547.1, "high": 571.88, "low": 542.05, "close": 562.3, "volume": 921977100}, {"time": "2025-08-01", "open": 556.15, "high": 580.52, "low": 549.04, "close": 567.67, "volume": 964846900}, {"time": "2025-09-01", "open": 559.27, "high": 600.68, "low": 557.5, "close": 598.18, "volume": 1132872000}, {"time": "2025-10-01", "open": 595.0, "high": 634.69, "low": 586.91, "close": 626.78, "volume": 1324908800}, {"time": "2025-11-01", "open": 632.8, "high": 633.51, "low": 578.63, "close": 617.0, "volume": 1227811700}, {"time": "2025-12-01", "open": 612.18, "high": 627.73, "low": 598.87, "close": 612.86, "volume": 1064378800}, {"time": "2026-01-01", "open": 618.6, "high": 635.1, "low": 605.62, "close": 620.41, "volume": 1085285800}, {"time": "2026-02-01", "open": 617.24, "high": 628.5, "low": 591.94, "close": 605.86, "volume": 1306657000}, {"time": "2026-03-01", "open": 598.2, "high": 612.62, "low": 554.99, "close": 576.55, "volume": 1630084200}, {"time": "2026-04-01", "open": 580.84, "high": 668.17, "low": 571.29, "close": 667.01, "volume": 918162900}, {"time": "2026-05-01", "open": 668.43, "high": 740.82, "low": 668.07, "close": 737.5, "volume": 787478800}, {"time": "2026-06-01", "open": 737.04, "high": 748.65, "low": 686.37, "close": 736.4, "volume": 1099317200}, {"time": "2026-07-01", "open": 729.19, "high": 731.92, "low": 661.14, "close": 687.99, "volume": 894901400}, {"time": "2026-08-01", "open": 688.3, "high": 734.58, "low": 685.82, "close": 716.76, "volume": 697194300}, {"time": "2026-09-01", "open": 707.39, "high": 721.89, "low": 700.0, "close": 721.45, "volume": 465152137}], "ma60": [{"time": "2004-02-01", "value": 41.73}, {"time": "2004-03-01", "value": 41.5}, {"time": "2004-04-01", "value": 41.23}, {"time": "2004-05-01", "value": 41.02}, {"time": "2004-06-01", "value": 40.74}, {"time": "2004-07-01", "value": 40.43}, {"time": "2004-08-01", "value": 40.07}, {"time": "2004-09-01", "value": 39.72}, {"time": "2004-10-01", "value": 39.32}, {"time": "2004-11-01", "value": 38.83}, {"time": "2004-12-01", "value": 38.12}, {"time": "2005-01-01", "value": 37.39}, {"time": "2005-02-01", "value": 36.42}, {"time": "2005-03-01", "value": 35.4}, {"time": "2005-04-01", "value": 34.56}, {"time": "2005-05-01", "value": 33.94}, {"time": "2005-06-01", "value": 33.15}, {"time": "2005-07-01", "value": 32.45}, {"time": "2005-08-01", "value": 31.58}, {"time": "2005-09-01", "value": 30.89}, {"time": "2005-10-01", "value": 30.3}, {"time": "2005-11-01", "value": 30.0}, {"time": "2005-12-01", "value": 29.75}, {"time": "2006-01-01", "value": 29.45}, {"time": "2006-02-01", "value": 29.37}, {"time": "2006-03-01", "value": 29.41}, {"time": "2006-04-01", "value": 29.36}, {"time": "2006-05-01", "value": 29.29}, {"time": "2006-06-01", "value": 29.2}, {"time": "2006-07-01", "value": 29.14}, {"time": "2006-08-01", "value": 29.18}, {"time": "2006-09-01", "value": 29.35}, {"time": "2006-10-01", "value": 29.48}, {"time": "2006-11-01", "value": 29.55}, {"time": "2006-12-01", "value": 29.62}, {"time": "2007-01-01", "value": 29.71}, {"time": "2007-02-01", "value": 29.85}, {"time": "2007-03-01", "value": 29.97}, {"time": "2007-04-01", "value": 30.18}, {"time": "2007-05-01", "value": 30.44}, {"time": "2007-06-01", "value": 30.75}, {"time": "2007-07-01", "value": 31.1}, {"time": "2007-08-01", "value": 31.46}, {"time": "2007-09-01", "value": 31.91}, {"time": "2007-10-01", "value": 32.35}, {"time": "2007-11-01", "value": 32.7}, {"time": "2007-12-01", "value": 33.09}, {"time": "2008-01-01", "value": 33.39}, {"time": "2008-02-01", "value": 33.65}, {"time": "2008-03-01", "value": 33.92}, {"time": "2008-04-01", "value": 34.21}, {"time": "2008-05-01", "value": 34.51}, {"time": "2008-06-01", "value": 34.74}, {"time": "2008-07-01", "value": 34.94}, {"time": "2008-08-01", "value": 35.14}, {"time": "2008-09-01", "value": 35.24}, {"time": "2008-10-01", "value": 35.22}, {"time": "2008-11-01", "value": 35.14}, {"time": "2008-12-01", "value": 35.05}, {"time": "2009-01-01", "value": 34.95}, {"time": "2009-02-01", "value": 34.83}, {"time": "2009-03-01", "value": 34.77}, {"time": "2009-04-01", "value": 34.77}, {"time": "2009-05-01", "value": 34.77}, {"time": "2009-06-01", "value": 34.76}, {"time": "2009-07-01", "value": 34.84}, {"time": "2009-08-01", "value": 34.94}, {"time": "2009-09-01", "value": 35.05}, {"time": "2009-10-01", "value": 35.13}, {"time": "2009-11-01", "value": 35.2}, {"time": "2009-12-01", "value": 35.3}, {"time": "2010-01-01", "value": 35.39}, {"time": "2010-02-01", "value": 35.51}, {"time": "2010-03-01", "value": 35.68}, {"time": "2010-04-01", "value": 35.9}, {"time": "2010-05-01", "value": 36.02}, {"time": "2010-06-01", "value": 36.12}, {"time": "2010-07-01", "value": 36.22}, {"time": "2010-08-01", "value": 36.3}, {"time": "2010-09-01", "value": 36.45}, {"time": "2010-10-01", "value": 36.66}, {"time": "2010-11-01", "value": 36.83}, {"time": "2010-12-01", "value": 37.05}, {"time": "2011-01-01", "value": 37.27}, {"time": "2011-02-01", "value": 37.53}, {"time": "2011-03-01", "value": 37.77}, {"time": "2011-04-01", "value": 38.04}, {"time": "2011-05-01", "value": 38.34}, {"time": "2011-06-01", "value": 38.62}, {"time": "2011-07-01", "value": 38.94}, {"time": "2011-08-01", "value": 39.19}, {"time": "2011-09-01", "value": 39.38}, {"time": "2011-10-01", "value": 39.63}, {"time": "2011-11-01", "value": 39.82}, {"time": "2011-12-01", "value": 40.03}, {"time": "2012-01-01", "value": 40.29}, {"time": "2012-02-01", "value": 40.62}, {"time": "2012-03-01", "value": 41.0}, {"time": "2012-04-01", "value": 41.32}, {"time": "2012-05-01", "value": 41.56}, {"time": "2012-06-01", "value": 41.83}, {"time": "2012-07-01", "value": 42.11}, {"time": "2012-08-01", "value": 42.42}, {"time": "2012-09-01", "value": 42.7}, {"time": "2012-10-01", "value": 42.87}, {"time": "2012-11-01", "value": 43.11}, {"time": "2012-12-01", "value": 43.35}, {"time": "2013-01-01", "value": 43.7}, {"time": "2013-02-01", "value": 44.09}, {"time": "2013-03-01", "value": 44.49}, {"time": "2013-04-01", "value": 44.87}, {"time": "2013-05-01", "value": 45.25}, {"time": "2013-06-01", "value": 45.67}, {"time": "2013-07-01", "value": 46.15}, {"time": "2013-08-01", "value": 46.62}, {"time": "2013-09-01", "value": 47.25}, {"time": "2013-10-01", "value": 48.02}, {"time": "2013-11-01", "value": 48.89}, {"time": "2013-12-01", "value": 49.79}, {"time": "2014-01-01", "value": 50.67}, {"time": "2014-02-01", "value": 51.65}, {"time": "2014-03-01", "value": 52.54}, {"time": "2014-04-01", "value": 53.37}, {"time": "2014-05-01", "value": 54.25}, {"time": "2014-06-01", "value": 55.15}, {"time": "2014-07-01", "value": 56.03}, {"time": "2014-08-01", "value": 56.97}, {"time": "2014-09-01", "value": 57.87}, {"time": "2014-10-01", "value": 58.83}, {"time": "2014-11-01", "value": 59.82}, {"time": "2014-12-01", "value": 60.73}, {"time": "2015-01-01", "value": 61.66}, {"time": "2015-02-01", "value": 62.68}, {"time": "2015-03-01", "value": 63.6}, {"time": "2015-04-01", "value": 64.54}, {"time": "2015-05-01", "value": 65.57}, {"time": "2015-06-01", "value": 66.6}, {"time": "2015-07-01", "value": 67.65}, {"time": "2015-08-01", "value": 68.63}, {"time": "2015-09-01", "value": 69.48}, {"time": "2015-10-01", "value": 70.47}, {"time": "2015-11-01", "value": 71.47}, {"time": "2015-12-01", "value": 72.4}, {"time": "2016-01-01", "value": 73.2}, {"time": "2016-02-01", "value": 73.94}, {"time": "2016-03-01", "value": 74.8}, {"time": "2016-04-01", "value": 75.57}, {"time": "2016-05-01", "value": 76.43}, {"time": "2016-06-01", "value": 77.27}, {"time": "2016-07-01", "value": 78.21}, {"time": "2016-08-01", "value": 79.22}, {"time": "2016-09-01", "value": 80.3}, {"time": "2016-10-01", "value": 81.27}, {"time": "2016-11-01", "value": 82.28}, {"time": "2016-12-01", "value": 83.31}, {"time": "2017-01-01", "value": 84.36}, {"time": "2017-02-01", "value": 85.45}, {"time": "2017-03-01", "value": 86.53}, {"time": "2017-04-01", "value": 87.67}, {"time": "2017-05-01", "value": 88.97}, {"time": "2017-06-01", "value": 90.19}, {"time": "2017-07-01", "value": 91.48}, {"time": "2017-08-01", "value": 92.77}, {"time": "2017-09-01", "value": 94.04}, {"time": "2017-10-01", "value": 95.48}, {"time": "2017-11-01", "value": 96.95}, {"time": "2017-12-01", "value": 98.43}, {"time": "2018-01-01", "value": 100.11}, {"time": "2018-02-01", "value": 101.75}, {"time": "2018-03-01", "value": 103.25}, {"time": "2018-04-01", "value": 104.74}, {"time": "2018-05-01", "value": 106.33}, {"time": "2018-06-01", "value": 107.98}, {"time": "2018-07-01", "value": 109.64}, {"time": "2018-08-01", "value": 111.46}, {"time": "2018-09-01", "value": 113.23}, {"time": "2018-10-01", "value": 114.68}, {"time": "2018-11-01", "value": 116.08}, {"time": "2018-12-01", "value": 117.2}, {"time": "2019-01-01", "value": 118.58}, {"time": "2019-02-01", "value": 119.97}, {"time": "2019-03-01", "value": 121.5}, {"time": "2019-04-01", "value": 123.2}, {"time": "2019-05-01", "value": 124.58}, {"time": "2019-06-01", "value": 126.14}, {"time": "2019-07-01", "value": 127.75}, {"time": "2019-08-01", "value": 129.22}, {"time": "2019-09-01", "value": 130.74}, {"time": "2019-10-01", "value": 132.35}, {"time": "2019-11-01", "value": 134.01}, {"time": "2019-12-01", "value": 135.84}, {"time": "2020-01-01", "value": 137.81}, {"time": "2020-02-01", "value": 139.45}, {"time": "2020-03-01", "value": 140.89}, {"time": "2020-04-01", "value": 142.76}, {"time": "2020-05-01", "value": 144.83}, {"time": "2020-06-01", "value": 147.17}, {"time": "2020-07-01", "value": 149.73}, {"time": "2020-08-01", "value": 152.87}, {"time": "2020-09-01", "value": 155.78}, {"time": "2020-10-01", "value": 158.37}, {"time": "2020-11-01", "value": 161.44}, {"time": "2020-12-01", "value": 164.77}, {"time": "2021-01-01", "value": 168.24}, {"time": "2021-02-01", "value": 171.72}, {"time": "2021-03-01", "value": 175.18}, {"time": "2021-04-01", "value": 179.0}, {"time": "2021-05-01", "value": 182.69}, {"time": "2021-06-01", "value": 186.75}, {"time": "2021-07-01", "value": 190.85}, {"time": "2021-08-01", "value": 195.18}, {"time": "2021-09-01", "value": 199.13}, {"time": "2021-10-01", "value": 203.56}, {"time": "2021-11-01", "value": 208.1}, {"time": "2021-12-01", "value": 212.7}, {"time": "2022-01-01", "value": 216.64}, {"time": "2022-02-01", "value": 220.23}, {"time": "2022-03-01", "value": 224.04}, {"time": "2022-04-01", "value": 226.99}, {"time": "2022-05-01", "value": 229.78}, {"time": "2022-06-01", "value": 232.18}, {"time": "2022-07-01", "value": 235.06}, {"time": "2022-08-01", "value": 237.63}, {"time": "2022-09-01", "value": 239.7}, {"time": "2022-10-01", "value": 241.83}, {"time": "2022-11-01", "value": 244.17}, {"time": "2022-12-01", "value": 246.06}, {"time": "2023-01-01", "value": 248.2}, {"time": "2023-02-01", "value": 250.35}, {"time": "2023-03-01", "value": 253.07}, {"time": "2023-04-01", "value": 255.8}, {"time": "2023-05-01", "value": 258.81}, {"time": "2023-06-01", "value": 262.14}, {"time": "2023-07-01", "value": 265.63}, {"time": "2023-08-01", "value": 268.87}, {"time": "2023-09-01", "value": 271.8}, {"time": "2023-10-01", "value": 274.86}, {"time": "2023-11-01", "value": 278.55}, {"time": "2023-12-01", "value": 282.83}, {"time": "2024-01-01", "value": 287.01}, {"time": "2024-02-01", "value": 291.47}, {"time": "2024-03-01", "value": 295.92}, {"time": "2024-04-01", "value": 299.89}, {"time": "2024-05-01", "value": 304.54}, {"time": "2024-06-01", "value": 309.46}, {"time": "2024-07-01", "value": 314.17}, {"time": "2024-08-01", "value": 319.03}, {"time": "2024-09-01", "value": 324.07}, {"time": "2024-10-01", "value": 328.91}, {"time": "2024-11-01", "value": 334.05}, {"time": "2024-12-01", "value": 339.09}, {"time": "2025-01-01", "value": 344.22}, {"time": "2025-02-01", "value": 349.32}, {"time": "2025-03-01", "value": 354.03}, {"time": "2025-04-01", "value": 358.39}, {"time": "2025-05-01", "value": 363.24}, {"time": "2025-06-01", "value": 368.4}, {"time": "2025-07-01", "value": 373.49}, {"time": "2025-08-01", "value": 378.2}, {"time": "2025-09-01", "value": 383.7}, {"time": "2025-10-01", "value": 389.8}, {"time": "2025-11-01", "value": 395.26}, {"time": "2025-12-01", "value": 400.41}, {"time": "2026-01-01", "value": 405.68}, {"time": "2026-02-01", "value": 410.71}, {"time": "2026-03-01", "value": 415.16}, {"time": "2026-04-01", "value": 420.82}, {"time": "2026-05-01", "value": 427.71}, {"time": "2026-06-01", "value": 434.25}, {"time": "2026-07-01", "value": 439.82}, {"time": "2026-08-01", "value": 445.62}, {"time": "2026-09-01", "value": 451.85}], "stats": [{"time": "1999-03-01", "open": 43.08, "high": 45.66, "low": 40.87, "close": 44.21, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "1999-04-01", "open": 45.5, "high": 48.27, "low": 41.16, "close": 45.27, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "1999-05-01", "open": 45.13, "high": 47.19, "low": 41.24, "close": 43.84, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "1999-06-01", "open": 43.76, "high": 50.51, "low": 41.77, "close": 48.56, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "1999-07-01", "open": 48.71, "high": 52.01, "low": 47.0, "close": 47.69, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "1999-08-01", "open": 47.77, "high": 52.03, "low": 44.61, "close": 50.29, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "1999-09-01", "open": 50.61, "high": 53.72, "low": 49.4, "close": 50.72, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "1999-10-01", "open": 50.03, "high": 55.82, "low": 48.38, "close": 55.4, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "1999-11-01", "open": 55.4, "high": 66.38, "low": 54.94, "close": 61.93, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "1999-12-01", "open": 62.62, "high": 79.0, "low": 62.14, "close": 77.0, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2000-01-01", "open": 81.05, "high": 82.26, "low": 67.2, "close": 75.57, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2000-02-01", "open": 75.44, "high": 90.58, "low": 74.52, "close": 89.95, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2000-03-01", "open": 90.37, "high": 101.54, "low": 85.11, "close": 92.27, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2000-04-01", "open": 90.81, "high": 91.95, "low": 65.73, "close": 79.84, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2000-05-01", "open": 80.68, "high": 81.63, "low": 60.88, "close": 70.04, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2000-06-01", "open": 71.78, "high": 84.03, "low": 69.52, "close": 78.73, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2000-07-01", "open": 78.79, "high": 86.0, "low": 72.23, "close": 75.36, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2000-08-01", "open": 75.68, "high": 85.95, "low": 70.2, "close": 85.63, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2000-09-01", "open": 86.79, "high": 87.23, "low": 73.31, "close": 74.78, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2000-10-01", "open": 76.05, "high": 76.05, "low": 62.04, "close": 68.85, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2000-11-01", "open": 67.67, "high": 70.89, "low": 50.98, "close": 53.07, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2000-12-01", "open": 53.98, "high": 63.01, "low": 45.71, "close": 49.19, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2001-01-01", "open": 49.35, "high": 58.25, "low": 43.95, "close": 54.18, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2001-02-01", "open": 54.39, "high": 55.29, "low": 39.49, "close": 39.98, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2001-03-01", "open": 39.58, "high": 42.69, "low": 32.02, "close": 32.99, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2001-04-01", "open": 33.01, "high": 41.66, "low": 28.31, "close": 38.89, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2001-05-01", "open": 38.93, "high": 43.77, "low": 36.53, "close": 37.69, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2001-06-01", "open": 38.37, "high": 41.7, "low": 34.77, "close": 38.51, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2001-07-01", "open": 38.47, "high": 39.17, "low": 33.12, "close": 35.19, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2001-08-01", "open": 35.92, "high": 37.08, "low": 30.12, "close": 30.87, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2001-09-01", "open": 30.76, "high": 31.6, "low": 22.92, "close": 24.42, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2001-10-01", "open": 24.31, "high": 31.23, "low": 23.47, "close": 28.57, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2001-11-01", "open": 29.02, "high": 34.52, "low": 28.46, "close": 33.41, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2001-12-01", "open": 33.11, "high": 36.44, "low": 32.39, "close": 32.79, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2002-01-01", "open": 33.34, "high": 35.9, "low": 31.05, "close": 32.45, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2002-02-01", "open": 32.36, "high": 32.76, "low": 27.88, "close": 28.46, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2002-03-01", "open": 28.78, "high": 33.02, "low": 28.73, "close": 30.39, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2002-04-01", "open": 30.17, "high": 31.09, "low": 25.75, "close": 26.74, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2002-05-01", "open": 26.69, "high": 28.34, "low": 23.95, "close": 25.31, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2002-06-01", "open": 25.28, "high": 25.49, "low": 20.55, "close": 21.99, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2002-07-01", "open": 21.88, "high": 22.37, "low": 18.23, "close": 20.1, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2002-08-01", "open": 20.0, "high": 22.09, "low": 17.95, "close": 19.79, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2002-09-01", "open": 19.43, "high": 20.52, "low": 17.27, "close": 17.46, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2002-10-01", "open": 17.62, "high": 21.1, "low": 16.65, "close": 20.69, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2002-11-01", "open": 20.54, "high": 23.84, "low": 20.34, "close": 23.36, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2002-12-01", "open": 23.95, "high": 24.26, "low": 20.46, "close": 20.54, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2003-01-01", "open": 20.83, "high": 23.15, "low": 20.23, "close": 20.59, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2003-02-01", "open": 20.66, "high": 21.38, "low": 19.65, "close": 21.2, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2003-03-01", "open": 21.29, "high": 23.07, "low": 19.84, "close": 21.28, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2003-04-01", "open": 21.44, "high": 23.64, "low": 21.28, "close": 23.13, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2003-05-01", "open": 23.12, "high": 25.17, "low": 22.91, "close": 25.1, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2003-06-01", "open": 25.35, "high": 26.52, "low": 24.7, "close": 25.24, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2003-07-01", "open": 25.03, "high": 27.6, "low": 24.66, "close": 26.8, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2003-08-01", "open": 26.7, "high": 28.19, "low": 25.22, "close": 28.14, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2003-09-01", "open": 28.22, "high": 29.37, "low": 27.27, "close": 27.32, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2003-10-01", "open": 27.48, "high": 30.33, "low": 27.32, "close": 29.64, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2003-11-01", "open": 29.85, "high": 30.49, "low": 28.42, "close": 29.81, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2003-12-01", "open": 30.1, "high": 30.89, "low": 28.77, "close": 30.73, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2004-01-01", "open": 30.9, "high": 32.88, "low": 30.53, "close": 31.25, "ma60": null, "diff": null, "diff_pct_ma": null, "diff_pct_close": null}, {"time": "2004-02-01", "open": 31.36, "high": 32.01, "low": 30.43, "close": 30.83, "ma60": 41.73, "diff": -10.9, "diff_pct_ma": -26.12, "diff_pct_close": -35.36}, {"time": "2004-03-01", "open": 30.92, "high": 31.34, "low": 28.67, "close": 30.21, "ma60": 41.5, "diff": -11.29, "diff_pct_ma": -27.2, "diff_pct_close": -37.37}, {"time": "2004-04-01", "open": 30.19, "high": 31.61, "low": 29.27, "close": 29.31, "ma60": 41.23, "diff": -11.92, "diff_pct_ma": -28.91, "diff_pct_close": -40.67}, {"time": "2004-05-01", "open": 29.5, "high": 30.81, "low": 28.75, "close": 30.81, "ma60": 41.02, "diff": -10.21, "diff_pct_ma": -24.89, "diff_pct_close": -33.14}, {"time": "2004-06-01", "open": 30.57, "high": 31.95, "low": 30.19, "close": 31.81, "ma60": 40.74, "diff": -8.93, "diff_pct_ma": -21.92, "diff_pct_close": -28.07}, {"time": "2004-07-01", "open": 31.75, "high": 31.75, "low": 28.41, "close": 29.41, "ma60": 40.43, "diff": -11.02, "diff_pct_ma": -27.26, "diff_pct_close": -37.47}, {"time": "2004-08-01", "open": 29.17, "high": 29.52, "low": 27.27, "close": 28.68, "ma60": 40.07, "diff": -11.39, "diff_pct_ma": -28.43, "diff_pct_close": -39.71}, {"time": "2004-09-01", "open": 28.6, "high": 30.22, "low": 28.49, "close": 29.62, "ma60": 39.72, "diff": -10.1, "diff_pct_ma": -25.43, "diff_pct_close": -34.1}, {"time": "2004-10-01", "open": 29.88, "high": 31.39, "low": 29.67, "close": 31.11, "ma60": 39.32, "diff": -8.21, "diff_pct_ma": -20.88, "diff_pct_close": -26.39}, {"time": "2004-11-01", "open": 31.17, "high": 33.42, "low": 31.02, "close": 32.98, "ma60": 38.83, "diff": -5.85, "diff_pct_ma": -15.07, "diff_pct_close": -17.74}, {"time": "2004-12-01", "open": 33.42, "high": 34.62, "low": 33.27, "close": 33.97, "ma60": 38.12, "diff": -4.15, "diff_pct_ma": -10.89, "diff_pct_close": -12.22}, {"time": "2005-01-01", "open": 34.12, "high": 34.29, "low": 31.03, "close": 31.83, "ma60": 37.39, "diff": -5.56, "diff_pct_ma": -14.87, "diff_pct_close": -17.47}, {"time": "2005-02-01", "open": 31.91, "high": 32.75, "low": 31.23, "close": 31.68, "ma60": 36.42, "diff": -4.74, "diff_pct_ma": -13.01, "diff_pct_close": -14.96}, {"time": "2005-03-01", "open": 31.8, "high": 32.59, "low": 30.59, "close": 31.12, "ma60": 35.4, "diff": -4.28, "diff_pct_ma": -12.09, "diff_pct_close": -13.75}, {"time": "2005-04-01", "open": 31.34, "high": 31.55, "low": 29.23, "close": 29.77, "ma60": 34.56, "diff": -4.79, "diff_pct_ma": -13.86, "diff_pct_close": -16.09}, {"time": "2005-05-01", "open": 29.87, "high": 32.57, "low": 29.69, "close": 32.41, "ma60": 33.94, "diff": -1.53, "diff_pct_ma": -4.51, "diff_pct_close": -4.72}, {"time": "2005-06-01", "open": 32.39, "high": 32.95, "low": 31.26, "close": 31.33, "ma60": 33.15, "diff": -1.82, "diff_pct_ma": -5.49, "diff_pct_close": -5.81}, {"time": "2005-07-01", "open": 31.4, "high": 34.0, "low": 31.13, "close": 33.72, "ma60": 32.45, "diff": 1.27, "diff_pct_ma": 3.91, "diff_pct_close": 3.77}, {"time": "2005-08-01", "open": 33.77, "high": 34.19, "low": 32.59, "close": 33.2, "ma60": 31.58, "diff": 1.62, "diff_pct_ma": 5.13, "diff_pct_close": 4.88}, {"time": "2005-09-01", "open": 33.22, "high": 34.0, "low": 32.57, "close": 33.61, "ma60": 30.89, "diff": 2.72, "diff_pct_ma": 8.81, "diff_pct_close": 8.09}, {"time": "2005-10-01", "open": 33.68, "high": 33.97, "low": 31.8, "close": 33.11, "ma60": 30.3, "diff": 2.81, "diff_pct_ma": 9.27, "diff_pct_close": 8.49}, {"time": "2005-11-01", "open": 33.03, "high": 35.79, "low": 32.97, "close": 35.13, "ma60": 30.0, "diff": 5.13, "diff_pct_ma": 17.1, "diff_pct_close": 14.6}, {"time": "2005-12-01", "open": 35.44, "high": 36.13, "low": 34.46, "close": 34.51, "ma60": 29.75, "diff": 4.76, "diff_pct_ma": 16.0, "diff_pct_close": 13.79}, {"time": "2006-01-01", "open": 34.71, "high": 36.98, "low": 34.29, "close": 35.86, "ma60": 29.45, "diff": 6.41, "diff_pct_ma": 21.77, "diff_pct_close": 17.88}, {"time": "2006-02-01", "open": 35.64, "high": 36.01, "low": 34.38, "close": 35.09, "ma60": 29.37, "diff": 5.72, "diff_pct_ma": 19.48, "diff_pct_close": 16.3}, {"time": "2006-03-01", "open": 35.23, "high": 36.14, "low": 34.34, "close": 35.83, "ma60": 29.41, "diff": 6.42, "diff_pct_ma": 21.83, "diff_pct_close": 17.92}, {"time": "2006-04-01", "open": 36.02, "high": 36.79, "low": 35.37, "close": 35.76, "ma60": 29.36, "diff": 6.4, "diff_pct_ma": 21.8, "diff_pct_close": 17.9}, {"time": "2006-05-01", "open": 35.82, "high": 36.13, "low": 32.67, "close": 33.17, "ma60": 29.29, "diff": 3.88, "diff_pct_ma": 13.25, "diff_pct_close": 11.7}, {"time": "2006-06-01", "open": 33.29, "high": 34.2, "low": 31.77, "close": 33.15, "ma60": 29.2, "diff": 3.95, "diff_pct_ma": 13.53, "diff_pct_close": 11.92}, {"time": "2006-07-01", "open": 33.25, "high": 33.35, "low": 30.39, "close": 31.72, "ma60": 29.14, "diff": 2.58, "diff_pct_ma": 8.85, "diff_pct_close": 8.13}, {"time": "2006-08-01", "open": 31.44, "high": 33.37, "low": 31.0, "close": 33.24, "ma60": 29.18, "diff": 4.06, "diff_pct_ma": 13.91, "diff_pct_close": 12.21}, {"time": "2006-09-01", "open": 33.43, "high": 35.03, "low": 32.78, "close": 34.78, "ma60": 29.35, "diff": 5.43, "diff_pct_ma": 18.5, "diff_pct_close": 15.61}, {"time": "2006-10-01", "open": 34.74, "high": 36.72, "low": 34.12, "close": 36.43, "ma60": 29.48, "diff": 6.95, "diff_pct_ma": 23.58, "diff_pct_close": 19.08}, {"time": "2006-11-01", "open": 36.56, "high": 38.38, "low": 35.6, "close": 37.68, "ma60": 29.55, "diff": 8.13, "diff_pct_ma": 27.51, "diff_pct_close": 21.58}, {"time": "2006-12-01", "open": 37.69, "high": 38.34, "low": 36.73, "close": 36.97, "ma60": 29.62, "diff": 7.35, "diff_pct_ma": 24.81, "diff_pct_close": 19.88}, {"time": "2007-01-01", "open": 37.23, "high": 38.89, "low": 36.42, "close": 37.75, "ma60": 29.71, "diff": 8.04, "diff_pct_ma": 27.06, "diff_pct_close": 21.3}, {"time": "2007-02-01", "open": 37.92, "high": 39.02, "low": 36.77, "close": 37.12, "ma60": 29.85, "diff": 7.27, "diff_pct_ma": 24.36, "diff_pct_close": 19.59}, {"time": "2007-03-01", "open": 36.47, "high": 38.1, "low": 36.05, "close": 37.31, "ma60": 29.97, "diff": 7.34, "diff_pct_ma": 24.49, "diff_pct_close": 19.67}, {"time": "2007-04-01", "open": 37.43, "high": 40.03, "low": 37.11, "close": 39.39, "ma60": 30.18, "diff": 9.21, "diff_pct_ma": 30.52, "diff_pct_close": 23.38}, {"time": "2007-05-01", "open": 39.4, "high": 40.73, "low": 39.14, "close": 40.64, "ma60": 30.44, "diff": 10.2, "diff_pct_ma": 33.51, "diff_pct_close": 25.1}, {"time": "2007-06-01", "open": 40.81, "high": 41.11, "low": 39.6, "close": 40.83, "ma60": 30.75, "diff": 10.08, "diff_pct_ma": 32.78, "diff_pct_close": 24.69}, {"time": "2007-07-01", "open": 40.93, "high": 43.46, "low": 40.69, "close": 40.77, "ma60": 31.1, "diff": 9.67, "diff_pct_ma": 31.09, "diff_pct_close": 23.72}, {"time": "2007-08-01", "open": 40.65, "high": 42.08, "low": 38.08, "close": 41.92, "ma60": 31.46, "diff": 10.46, "diff_pct_ma": 33.25, "diff_pct_close": 24.95}, {"time": "2007-09-01", "open": 41.99, "high": 44.35, "low": 41.03, "close": 44.12, "ma60": 31.91, "diff": 12.21, "diff_pct_ma": 38.26, "diff_pct_close": 27.67}, {"time": "2007-10-01", "open": 44.16, "high": 47.26, "low": 44.06, "close": 47.23, "ma60": 32.35, "diff": 14.88, "diff_pct_ma": 46.0, "diff_pct_close": 31.51}, {"time": "2007-11-01", "open": 46.93, "high": 47.01, "low": 41.75, "close": 44.04, "ma60": 32.7, "diff": 11.34, "diff_pct_ma": 34.68, "diff_pct_close": 25.75}, {"time": "2007-12-01", "open": 43.89, "high": 45.4, "low": 42.25, "close": 44.01, "ma60": 33.09, "diff": 10.92, "diff_pct_ma": 33.0, "diff_pct_close": 24.81}, {"time": "2008-01-01", "open": 44.05, "high": 44.22, "low": 35.75, "close": 38.77, "ma60": 33.39, "diff": 5.38, "diff_pct_ma": 16.11, "diff_pct_close": 13.88}, {"time": "2008-02-01", "open": 39.09, "high": 39.42, "low": 36.21, "close": 36.9, "ma60": 33.65, "diff": 3.25, "diff_pct_ma": 9.66, "diff_pct_close": 8.81}, {"time": "2008-03-01", "open": 36.9, "high": 38.75, "low": 35.3, "close": 37.59, "ma60": 33.92, "diff": 3.67, "diff_pct_ma": 10.82, "diff_pct_close": 9.76}, {"time": "2008-04-01", "open": 38.19, "high": 41.32, "low": 37.56, "close": 40.59, "ma60": 34.21, "diff": 6.38, "diff_pct_ma": 18.65, "diff_pct_close": 15.72}, {"time": "2008-05-01", "open": 40.61, "high": 43.39, "low": 40.6, "close": 43.0, "ma60": 34.51, "diff": 8.49, "diff_pct_ma": 24.6, "diff_pct_close": 19.74}, {"time": "2008-06-01", "open": 42.95, "high": 43.55, "low": 38.69, "close": 38.86, "ma60": 34.74, "diff": 4.12, "diff_pct_ma": 11.86, "diff_pct_close": 10.6}, {"time": "2008-07-01", "open": 38.55, "high": 39.71, "low": 37.26, "close": 39.11, "ma60": 34.94, "diff": 4.17, "diff_pct_ma": 11.93, "diff_pct_close": 10.66}, {"time": "2008-08-01", "open": 39.16, "high": 41.79, "low": 38.12, "close": 39.68, "ma60": 35.14, "diff": 4.54, "diff_pct_ma": 12.92, "diff_pct_close": 11.44}, {"time": "2008-09-01", "open": 40.35, "high": 40.54, "low": 32.01, "close": 33.5, "ma60": 35.24, "diff": -1.74, "diff_pct_ma": -4.94, "diff_pct_close": -5.19}, {"time": "2008-10-01", "open": 33.44, "high": 33.55, "low": 24.19, "close": 28.32, "ma60": 35.22, "diff": -6.9, "diff_pct_ma": -19.59, "diff_pct_close": -24.36}, {"time": "2008-11-01", "open": 28.25, "high": 29.28, "low": 21.57, "close": 25.07, "ma60": 35.14, "diff": -10.07, "diff_pct_ma": -28.66, "diff_pct_close": -40.17}, {"time": "2008-12-01", "open": 24.57, "high": 26.58, "low": 23.14, "close": 25.64, "ma60": 35.05, "diff": -9.41, "diff_pct_ma": -26.85, "diff_pct_close": -36.7}, {"time": "2009-01-01", "open": 25.65, "high": 27.27, "low": 24.11, "close": 25.06, "ma60": 34.95, "diff": -9.89, "diff_pct_ma": -28.3, "diff_pct_close": -39.47}, {"time": "2009-02-01", "open": 24.82, "high": 27.32, "low": 23.62, "close": 23.74, "ma60": 34.83, "diff": -11.09, "diff_pct_ma": -31.84, "diff_pct_close": -46.71}, {"time": "2009-03-01", "open": 23.42, "high": 27.17, "low": 22.14, "close": 26.19, "ma60": 34.77, "diff": -8.58, "diff_pct_ma": -24.68, "diff_pct_close": -32.76}, {"time": "2009-04-01", "open": 25.86, "high": 30.14, "low": 25.73, "close": 29.61, "ma60": 34.77, "diff": -5.16, "diff_pct_ma": -14.84, "diff_pct_close": -17.43}, {"time": "2009-05-01", "open": 29.6, "high": 30.66, "low": 28.47, "close": 30.56, "ma60": 34.77, "diff": -4.21, "diff_pct_ma": -12.11, "diff_pct_close": -13.78}, {"time": "2009-06-01", "open": 30.92, "high": 32.19, "low": 30.07, "close": 31.46, "ma60": 34.76, "diff": -3.3, "diff_pct_ma": -9.49, "diff_pct_close": -10.49}, {"time": "2009-07-01", "open": 31.61, "high": 34.74, "low": 29.66, "close": 34.11, "ma60": 34.84, "diff": -0.73, "diff_pct_ma": -2.1, "diff_pct_close": -2.14}, {"time": "2009-08-01", "open": 34.48, "high": 35.52, "low": 33.26, "close": 34.62, "ma60": 34.94, "diff": -0.32, "diff_pct_ma": -0.92, "diff_pct_close": -0.92}, {"time": "2009-09-01", "open": 34.53, "high": 37.37, "low": 33.77, "close": 36.57, "ma60": 35.05, "diff": 1.52, "diff_pct_ma": 4.34, "diff_pct_close": 4.16}, {"time": "2009-10-01", "open": 36.44, "high": 37.93, "low": 35.25, "close": 35.45, "ma60": 35.13, "diff": 0.32, "diff_pct_ma": 0.91, "diff_pct_close": 0.9}, {"time": "2009-11-01", "open": 35.49, "high": 38.65, "low": 35.18, "close": 37.7, "ma60": 35.2, "diff": 2.5, "diff_pct_ma": 7.1, "diff_pct_close": 6.63}, {"time": "2009-12-01", "open": 38.05, "high": 40.14, "low": 37.56, "close": 39.67, "ma60": 35.3, "diff": 4.37, "diff_pct_ma": 12.38, "diff_pct_close": 11.02}, {"time": "2010-01-01", "open": 40.17, "high": 40.44, "low": 36.96, "close": 37.1, "ma60": 35.39, "diff": 1.71, "diff_pct_ma": 4.83, "diff_pct_close": 4.61}, {"time": "2010-02-01", "open": 37.19, "high": 39.06, "low": 36.52, "close": 38.81, "ma60": 35.51, "diff": 3.3, "diff_pct_ma": 9.29, "diff_pct_close": 8.5}, {"time": "2010-03-01", "open": 39.02, "high": 42.18, "low": 39.01, "close": 41.8, "ma60": 35.68, "diff": 6.12, "diff_pct_ma": 17.15, "diff_pct_close": 14.64}, {"time": "2010-04-01", "open": 41.97, "high": 43.96, "low": 41.48, "close": 42.74, "ma60": 35.9, "diff": 6.84, "diff_pct_ma": 19.05, "diff_pct_close": 16.0}, {"time": "2010-05-01", "open": 42.92, "high": 43.54, "low": 37.01, "close": 39.58, "ma60": 36.02, "diff": 3.56, "diff_pct_ma": 9.88, "diff_pct_close": 8.99}, {"time": "2010-06-01", "open": 39.58, "high": 41.54, "low": 37.15, "close": 37.21, "ma60": 36.12, "diff": 1.09, "diff_pct_ma": 3.02, "diff_pct_close": 2.93}, {"time": "2010-07-01", "open": 37.33, "high": 40.71, "low": 36.39, "close": 39.91, "ma60": 36.22, "diff": 3.69, "diff_pct_ma": 10.19, "diff_pct_close": 9.25}, {"time": "2010-08-01", "open": 40.42, "high": 41.12, "low": 37.44, "close": 37.87, "ma60": 36.3, "diff": 1.57, "diff_pct_ma": 4.33, "diff_pct_close": 4.15}, {"time": "2010-09-01", "open": 38.51, "high": 43.53, "low": 38.49, "close": 42.85, "ma60": 36.45, "diff": 6.4, "diff_pct_ma": 17.56, "diff_pct_close": 14.94}, {"time": "2010-10-01", "open": 43.21, "high": 45.84, "low": 42.09, "close": 45.57, "ma60": 36.66, "diff": 8.91, "diff_pct_ma": 24.3, "diff_pct_close": 19.55}, {"time": "2010-11-01", "open": 45.74, "high": 47.19, "low": 44.41, "close": 45.49, "ma60": 36.83, "diff": 8.66, "diff_pct_ma": 23.51, "diff_pct_close": 19.04}, {"time": "2010-12-01", "open": 46.26, "high": 48.09, "low": 46.24, "close": 47.66, "ma60": 37.05, "diff": 10.61, "diff_pct_ma": 28.64, "diff_pct_close": 22.26}, {"time": "2011-01-01", "open": 48.1, "high": 50.18, "low": 48.06, "close": 49.0, "ma60": 37.27, "diff": 11.73, "diff_pct_ma": 31.47, "diff_pct_close": 23.94}, {"time": "2011-02-01", "open": 49.37, "high": 51.66, "low": 49.12, "close": 50.55, "ma60": 37.53, "diff": 13.02, "diff_pct_ma": 34.69, "diff_pct_close": 25.76}, {"time": "2011-03-01", "open": 50.84, "high": 51.15, "low": 47.12, "close": 50.33, "ma60": 37.77, "diff": 12.56, "diff_pct_ma": 33.25, "diff_pct_close": 24.96}, {"time": "2011-04-01", "open": 50.58, "high": 51.96, "low": 48.48, "close": 51.77, "ma60": 38.04, "diff": 13.73, "diff_pct_ma": 36.09, "diff_pct_close": 26.52}, {"time": "2011-05-01", "open": 51.85, "high": 52.0, "low": 49.48, "close": 51.14, "ma60": 38.34, "diff": 12.8, "diff_pct_ma": 33.39, "diff_pct_close": 25.03}, {"time": "2011-06-01", "open": 51.13, "high": 51.26, "low": 47.09, "close": 50.1, "ma60": 38.62, "diff": 11.48, "diff_pct_ma": 29.73, "diff_pct_close": 22.91}, {"time": "2011-07-01", "open": 50.13, "high": 52.55, "low": 49.95, "close": 50.94, "ma60": 38.94, "diff": 12.0, "diff_pct_ma": 30.82, "diff_pct_close": 23.56}, {"time": "2011-08-01", "open": 51.55, "high": 51.66, "low": 43.85, "close": 48.36, "ma60": 39.19, "diff": 9.17, "diff_pct_ma": 23.4, "diff_pct_close": 18.96}, {"time": "2011-09-01", "open": 48.57, "high": 50.46, "low": 45.68, "close": 46.19, "ma60": 39.38, "diff": 6.81, "diff_pct_ma": 17.29, "diff_pct_close": 14.74}, {"time": "2011-10-01", "open": 45.77, "high": 52.09, "low": 44.08, "close": 50.99, "ma60": 39.63, "diff": 11.36, "diff_pct_ma": 28.67, "diff_pct_close": 22.28}, {"time": "2011-11-01", "open": 49.73, "high": 51.9, "low": 46.52, "close": 49.62, "ma60": 39.82, "diff": 9.8, "diff_pct_ma": 24.61, "diff_pct_close": 19.75}, {"time": "2011-12-01", "open": 49.8, "high": 50.89, "low": 47.85, "close": 49.31, "ma60": 40.03, "diff": 9.28, "diff_pct_ma": 23.18, "diff_pct_close": 18.82}, {"time": "2012-01-01", "open": 50.27, "high": 53.76, "low": 49.96, "close": 53.46, "ma60": 40.29, "diff": 13.17, "diff_pct_ma": 32.69, "diff_pct_close": 24.64}, {"time": "2012-02-01", "open": 53.77, "high": 57.38, "low": 53.58, "close": 56.89, "ma60": 40.62, "diff": 16.27, "diff_pct_ma": 40.05, "diff_pct_close": 28.6}, {"time": "2012-03-01", "open": 57.2, "high": 60.61, "low": 55.94, "close": 59.77, "ma60": 41.0, "diff": 18.77, "diff_pct_ma": 45.78, "diff_pct_close": 31.4}, {"time": "2012-04-01", "open": 59.7, "high": 60.65, "low": 57.02, "close": 59.07, "ma60": 41.32, "diff": 17.75, "diff_pct_ma": 42.96, "diff_pct_close": 30.05}, {"time": "2012-05-01", "open": 59.0, "high": 59.84, "low": 53.76, "close": 54.91, "ma60": 41.56, "diff": 13.35, "diff_pct_ma": 32.12, "diff_pct_close": 24.31}, {"time": "2012-06-01", "open": 54.04, "high": 57.26, "low": 53.24, "close": 56.9, "ma60": 41.83, "diff": 15.07, "diff_pct_ma": 36.03, "diff_pct_close": 26.49}, {"time": "2012-07-01", "open": 56.98, "high": 57.92, "low": 54.86, "close": 57.46, "ma60": 42.11, "diff": 15.35, "diff_pct_ma": 36.45, "diff_pct_close": 26.71}, {"time": "2012-08-01", "open": 57.87, "high": 61.08, "low": 56.67, "close": 60.44, "ma60": 42.42, "diff": 18.02, "diff_pct_ma": 42.48, "diff_pct_close": 29.81}, {"time": "2012-09-01", "open": 60.5, "high": 62.77, "low": 59.96, "close": 60.98, "ma60": 42.7, "diff": 18.28, "diff_pct_ma": 42.81, "diff_pct_close": 29.98}, {"time": "2012-10-01", "open": 61.27, "high": 62.07, "low": 57.49, "close": 57.76, "ma60": 42.87, "diff": 14.89, "diff_pct_ma": 34.73, "diff_pct_close": 25.78}, {"time": "2012-11-01", "open": 58.13, "high": 58.88, "low": 54.52, "close": 58.52, "ma60": 43.11, "diff": 15.41, "diff_pct_ma": 35.75, "diff_pct_close": 26.33}, {"time": "2012-12-01", "open": 59.3, "high": 59.7, "low": 56.86, "close": 58.24, "ma60": 43.35, "diff": 14.89, "diff_pct_ma": 34.35, "diff_pct_close": 25.57}, {"time": "2013-01-01", "open": 59.67, "high": 60.62, "low": 59.17, "close": 59.8, "ma60": 43.7, "diff": 16.1, "diff_pct_ma": 36.84, "diff_pct_close": 26.92}, {"time": "2013-02-01", "open": 60.22, "high": 61.04, "low": 58.99, "close": 60.01, "ma60": 44.09, "diff": 15.92, "diff_pct_ma": 36.11, "diff_pct_close": 26.53}, {"time": "2013-03-01", "open": 59.94, "high": 61.9, "low": 59.64, "close": 61.82, "ma60": 44.49, "diff": 17.33, "diff_pct_ma": 38.95, "diff_pct_close": 28.03}, {"time": "2013-04-01", "open": 61.87, "high": 63.4, "low": 59.95, "close": 63.39, "ma60": 44.87, "diff": 18.52, "diff_pct_ma": 41.27, "diff_pct_close": 29.22}, {"time": "2013-05-01", "open": 63.41, "high": 67.18, "low": 62.97, "close": 65.66, "ma60": 45.25, "diff": 20.41, "diff_pct_ma": 45.1, "diff_pct_close": 31.08}, {"time": "2013-06-01", "open": 65.87, "high": 66.38, "low": 62.18, "close": 64.08, "ma60": 45.67, "diff": 18.41, "diff_pct_ma": 40.31, "diff_pct_close": 28.73}, {"time": "2013-07-01", "open": 64.52, "high": 68.53, "low": 64.16, "close": 68.13, "ma60": 46.15, "diff": 21.98, "diff_pct_ma": 47.63, "diff_pct_close": 32.26}, {"time": "2013-08-01", "open": 68.6, "high": 69.49, "low": 67.4, "close": 67.86, "ma60": 46.62, "diff": 21.24, "diff_pct_ma": 45.56, "diff_pct_close": 31.3}, {"time": "2013-09-01", "open": 68.62, "high": 71.87, "low": 68.13, "close": 71.14, "ma60": 47.25, "diff": 23.89, "diff_pct_ma": 50.56, "diff_pct_close": 33.58}, {"time": "2013-10-01", "open": 71.15, "high": 75.3, "low": 68.86, "close": 74.67, "ma60": 48.02, "diff": 26.65, "diff_pct_ma": 55.5, "diff_pct_close": 35.69}, {"time": "2013-11-01", "open": 74.92, "high": 77.42, "low": 73.39, "close": 77.32, "ma60": 48.89, "diff": 28.43, "diff_pct_ma": 58.15, "diff_pct_close": 36.77}, {"time": "2013-12-01", "open": 77.65, "high": 79.58, "low": 76.04, "close": 79.58, "ma60": 49.79, "diff": 29.79, "diff_pct_ma": 59.83, "diff_pct_close": 37.43}, {"time": "2014-01-01", "open": 79.21, "high": 80.52, "low": 76.69, "close": 78.05, "ma60": 50.67, "diff": 27.38, "diff_pct_ma": 54.04, "diff_pct_close": 35.08}, {"time": "2014-02-01", "open": 78.23, "high": 82.64, "low": 76.08, "close": 82.07, "ma60": 51.65, "diff": 30.42, "diff_pct_ma": 58.9, "diff_pct_close": 37.07}, {"time": "2014-03-01", "open": 81.49, "high": 83.19, "low": 78.67, "close": 79.83, "ma60": 52.54, "diff": 27.29, "diff_pct_ma": 51.94, "diff_pct_close": 34.19}, {"time": "2014-04-01", "open": 80.22, "high": 81.66, "low": 75.83, "close": 79.58, "ma60": 53.37, "diff": 26.21, "diff_pct_ma": 49.11, "diff_pct_close": 32.94}, {"time": "2014-05-01", "open": 79.7, "high": 83.27, "low": 77.88, "close": 83.14, "ma60": 54.25, "diff": 28.89, "diff_pct_ma": 53.25, "diff_pct_close": 34.75}, {"time": "2014-06-01", "open": 83.47, "high": 85.95, "low": 82.76, "close": 85.74, "ma60": 55.15, "diff": 30.59, "diff_pct_ma": 55.47, "diff_pct_close": 35.68}, {"time": "2014-07-01", "open": 86.04, "high": 89.03, "low": 85.49, "close": 86.76, "ma60": 56.03, "diff": 30.73, "diff_pct_ma": 54.85, "diff_pct_close": 35.42}, {"time": "2014-08-01", "open": 86.57, "high": 91.22, "low": 85.72, "close": 91.1, "ma60": 56.97, "diff": 34.13, "diff_pct_ma": 59.91, "diff_pct_close": 37.46}, {"time": "2014-09-01", "open": 91.54, "high": 92.03, "low": 89.41, "close": 90.41, "ma60": 57.87, "diff": 32.54, "diff_pct_ma": 56.23, "diff_pct_close": 35.99}, {"time": "2014-10-01", "open": 90.16, "high": 93.12, "low": 82.59, "close": 92.8, "ma60": 58.83, "diff": 33.97, "diff_pct_ma": 57.74, "diff_pct_close": 36.61}, {"time": "2014-11-01", "open": 92.97, "high": 97.24, "low": 92.13, "close": 97.02, "ma60": 59.82, "diff": 37.2, "diff_pct_ma": 62.19, "diff_pct_close": 38.34}, {"time": "2014-12-01", "open": 97.11, "high": 97.3, "low": 91.79, "close": 94.85, "ma60": 60.73, "diff": 34.12, "diff_pct_ma": 56.18, "diff_pct_close": 35.97}, {"time": "2015-01-01", "open": 95.31, "high": 96.07, "low": 91.27, "close": 92.87, "ma60": 61.66, "diff": 31.21, "diff_pct_ma": 50.62, "diff_pct_close": 33.61}, {"time": "2015-02-01", "open": 93.08, "high": 100.07, "low": 91.63, "close": 99.58, "ma60": 62.68, "diff": 36.9, "diff_pct_ma": 58.87, "diff_pct_close": 37.06}, {"time": "2015-03-01", "open": 100.0, "high": 100.74, "low": 95.98, "close": 97.23, "ma60": 63.6, "diff": 33.63, "diff_pct_ma": 52.88, "diff_pct_close": 34.59}, {"time": "2015-04-01", "open": 97.23, "high": 102.35, "low": 96.07, "close": 99.1, "ma60": 64.54, "diff": 34.56, "diff_pct_ma": 53.55, "diff_pct_close": 34.87}, {"time": "2015-05-01", "open": 99.48, "high": 102.27, "low": 97.6, "close": 101.32, "ma60": 65.57, "diff": 35.75, "diff_pct_ma": 54.52, "diff_pct_close": 35.28}, {"time": "2015-06-01", "open": 102.1, "high": 102.55, "low": 98.41, "close": 98.81, "ma60": 66.6, "diff": 32.21, "diff_pct_ma": 48.36, "diff_pct_close": 32.6}, {"time": "2015-07-01", "open": 99.79, "high": 105.56, "low": 97.66, "close": 103.31, "ma60": 67.65, "diff": 35.66, "diff_pct_ma": 52.71, "diff_pct_close": 34.52}, {"time": "2015-08-01", "open": 103.33, "high": 104.28, "low": 78.2, "close": 96.26, "ma60": 68.63, "diff": 27.63, "diff_pct_ma": 40.26, "diff_pct_close": 28.7}, {"time": "2015-09-01", "open": 94.09, "high": 100.58, "low": 91.35, "close": 94.14, "ma60": 69.48, "diff": 24.66, "diff_pct_ma": 35.49, "diff_pct_close": 26.2}, {"time": "2015-10-01", "open": 94.3, "high": 105.53, "low": 92.95, "close": 104.84, "ma60": 70.47, "diff": 34.37, "diff_pct_ma": 48.77, "diff_pct_close": 32.78}, {"time": "2015-11-01", "open": 105.12, "high": 106.82, "low": 101.28, "close": 105.48, "ma60": 71.47, "diff": 34.01, "diff_pct_ma": 47.59, "diff_pct_close": 32.24}, {"time": "2015-12-01", "open": 106.23, "high": 107.41, "low": 101.49, "close": 103.8, "ma60": 72.4, "diff": 31.4, "diff_pct_ma": 43.37, "diff_pct_close": 30.25}, {"time": "2016-01-01", "open": 101.56, "high": 102.24, "low": 90.24, "close": 96.62, "ma60": 73.2, "diff": 23.42, "diff_pct_ma": 31.99, "diff_pct_close": 24.24}, {"time": "2016-02-01", "open": 96.16, "high": 97.24, "low": 88.0, "close": 95.11, "ma60": 73.94, "diff": 21.17, "diff_pct_ma": 28.63, "diff_pct_close": 22.26}, {"time": "2016-03-01", "open": 96.3, "high": 102.41, "low": 96.01, "close": 101.63, "ma60": 74.8, "diff": 26.83, "diff_pct_ma": 35.87, "diff_pct_close": 26.4}, {"time": "2016-04-01", "open": 101.01, "high": 103.71, "low": 97.61, "close": 98.39, "ma60": 75.57, "diff": 22.82, "diff_pct_ma": 30.2, "diff_pct_close": 23.19}, {"time": "2016-05-01", "open": 98.64, "high": 102.85, "low": 97.16, "close": 102.69, "ma60": 76.43, "diff": 26.26, "diff_pct_ma": 34.36, "diff_pct_close": 25.57}, {"time": "2016-06-01", "open": 102.65, "high": 103.34, "low": 94.95, "close": 100.35, "ma60": 77.27, "diff": 23.08, "diff_pct_ma": 29.87, "diff_pct_close": 23.0}, {"time": "2016-07-01", "open": 100.3, "high": 107.81, "low": 99.44, "close": 107.53, "ma60": 78.21, "diff": 29.32, "diff_pct_ma": 37.49, "diff_pct_close": 27.27}, {"time": "2016-08-01", "open": 107.6, "high": 110.12, "low": 106.58, "close": 108.65, "ma60": 79.22, "diff": 29.43, "diff_pct_ma": 37.15, "diff_pct_close": 27.09}, {"time": "2016-09-01", "open": 108.96, "high": 111.53, "low": 106.3, "close": 111.06, "ma60": 80.3, "diff": 30.76, "diff_pct_ma": 38.31, "diff_pct_close": 27.7}, {"time": "2016-10-01", "open": 110.92, "high": 111.94, "low": 108.46, "close": 109.44, "ma60": 81.27, "diff": 28.17, "diff_pct_ma": 34.66, "diff_pct_close": 25.74}, {"time": "2016-11-01", "open": 109.63, "high": 111.8, "low": 106.13, "close": 109.92, "ma60": 82.28, "diff": 27.64, "diff_pct_ma": 33.59, "diff_pct_close": 25.15}, {"time": "2016-12-01", "open": 110.21, "high": 114.02, "low": 108.1, "close": 111.16, "ma60": 83.31, "diff": 27.85, "diff_pct_ma": 33.43, "diff_pct_close": 25.05}, {"time": "2017-01-01", "open": 111.9, "high": 118.14, "low": 111.55, "close": 116.88, "ma60": 84.36, "diff": 32.52, "diff_pct_ma": 38.55, "diff_pct_close": 27.82}, {"time": "2017-02-01", "open": 117.7, "high": 122.63, "low": 117.15, "close": 121.99, "ma60": 85.45, "diff": 36.54, "diff_pct_ma": 42.76, "diff_pct_close": 29.95}, {"time": "2017-03-01", "open": 123.02, "high": 124.8, "low": 121.66, "close": 124.46, "ma60": 86.53, "diff": 37.93, "diff_pct_ma": 43.83, "diff_pct_close": 30.48}, {"time": "2017-04-01", "open": 124.57, "high": 128.19, "low": 122.58, "close": 127.86, "ma60": 87.67, "diff": 40.19, "diff_pct_ma": 45.84, "diff_pct_close": 31.43}, {"time": "2017-05-01", "open": 128.28, "high": 133.36, "low": 127.74, "close": 132.84, "ma60": 88.97, "diff": 43.87, "diff_pct_ma": 49.31, "diff_pct_close": 33.02}, {"time": "2017-06-01", "open": 133.48, "high": 135.66, "low": 128.45, "close": 129.76, "ma60": 90.19, "diff": 39.57, "diff_pct_ma": 43.87, "diff_pct_close": 30.49}, {"time": "2017-07-01", "open": 130.35, "high": 137.6, "low": 128.03, "close": 135.03, "ma60": 91.48, "diff": 43.55, "diff_pct_ma": 47.61, "diff_pct_close": 32.25}, {"time": "2017-08-01", "open": 135.49, "high": 137.84, "low": 132.16, "close": 137.83, "ma60": 92.77, "diff": 45.06, "diff_pct_ma": 48.57, "diff_pct_close": 32.69}, {"time": "2017-09-01", "open": 138.31, "high": 138.5, "low": 134.26, "close": 137.42, "ma60": 94.04, "diff": 43.38, "diff_pct_ma": 46.13, "diff_pct_close": 31.57}, {"time": "2017-10-01", "open": 137.63, "high": 143.96, "low": 136.93, "close": 143.75, "ma60": 95.48, "diff": 48.27, "diff_pct_ma": 50.56, "diff_pct_close": 33.58}, {"time": "2017-11-01", "open": 144.33, "high": 148.04, "low": 142.45, "close": 146.59, "ma60": 96.95, "diff": 49.64, "diff_pct_ma": 51.2, "diff_pct_close": 33.86}, {"time": "2017-12-01", "open": 146.0, "high": 150.32, "low": 143.97, "close": 147.47, "ma60": 98.43, "diff": 49.04, "diff_pct_ma": 49.82, "diff_pct_close": 33.25}, {"time": "2018-01-01", "open": 148.23, "high": 161.85, "low": 147.86, "close": 160.39, "ma60": 100.11, "diff": 60.28, "diff_pct_ma": 60.21, "diff_pct_close": 37.58}, {"time": "2018-02-01", "open": 159.16, "high": 161.65, "low": 142.14, "close": 158.31, "ma60": 101.75, "diff": 56.56, "diff_pct_ma": 55.59, "diff_pct_close": 35.73}, {"time": "2018-03-01", "open": 158.66, "high": 166.16, "low": 147.98, "close": 151.86, "ma60": 103.25, "diff": 48.61, "diff_pct_ma": 47.08, "diff_pct_close": 32.01}, {"time": "2018-04-01", "open": 150.77, "high": 158.37, "low": 145.93, "close": 152.62, "ma60": 104.74, "diff": 47.88, "diff_pct_ma": 45.71, "diff_pct_close": 31.37}, {"time": "2018-05-01", "open": 152.23, "high": 162.35, "low": 150.99, "close": 161.28, "ma60": 106.33, "diff": 54.95, "diff_pct_ma": 51.68, "diff_pct_close": 34.07}, {"time": "2018-06-01", "open": 162.44, "high": 169.14, "low": 160.77, "close": 163.13, "ma60": 107.98, "diff": 55.15, "diff_pct_ma": 51.07, "diff_pct_close": 33.81}, {"time": "2018-07-01", "open": 161.6, "high": 173.85, "low": 161.25, "close": 167.69, "ma60": 109.64, "diff": 58.05, "diff_pct_ma": 52.95, "diff_pct_close": 34.62}, {"time": "2018-08-01", "open": 168.08, "high": 178.21, "low": 167.06, "close": 177.38, "ma60": 111.46, "diff": 65.92, "diff_pct_ma": 59.14, "diff_pct_close": 37.16}, {"time": "2018-09-01", "open": 177.16, "high": 177.55, "low": 171.79, "close": 176.88, "ma60": 113.23, "diff": 63.65, "diff_pct_ma": 56.21, "diff_pct_close": 35.98}, {"time": "2018-10-01", "open": 177.91, "high": 178.54, "low": 152.42, "close": 161.68, "ma60": 114.68, "diff": 47.0, "diff_pct_ma": 40.98, "diff_pct_close": 29.07}, {"time": "2018-11-01", "open": 161.92, "high": 167.16, "low": 149.6, "close": 161.25, "ma60": 116.08, "diff": 45.17, "diff_pct_ma": 38.91, "diff_pct_close": 28.01}, {"time": "2018-12-01", "open": 165.28, "high": 165.48, "low": 136.97, "close": 147.29, "ma60": 117.2, "diff": 30.09, "diff_pct_ma": 25.67, "diff_pct_close": 20.43}, {"time": "2019-01-01", "open": 144.16, "high": 161.35, "low": 142.73, "close": 160.56, "ma60": 118.58, "diff": 41.98, "diff_pct_ma": 35.4, "diff_pct_close": 26.15}, {"time": "2019-02-01", "open": 159.77, "high": 166.76, "low": 159.04, "close": 165.36, "ma60": 119.97, "diff": 45.39, "diff_pct_ma": 37.83, "diff_pct_close": 27.45}, {"time": "2019-03-01", "open": 166.86, "high": 174.88, "low": 161.98, "close": 171.85, "ma60": 121.5, "diff": 50.35, "diff_pct_ma": 41.44, "diff_pct_close": 29.3}, {"time": "2019-04-01", "open": 173.62, "high": 183.0, "low": 172.91, "close": 181.3, "ma60": 123.2, "diff": 58.1, "diff_pct_ma": 47.16, "diff_pct_close": 32.05}, {"time": "2019-05-01", "open": 182.49, "high": 183.0, "low": 166.31, "close": 166.39, "ma60": 124.58, "diff": 41.81, "diff_pct_ma": 33.56, "diff_pct_close": 25.13}, {"time": "2019-06-01", "open": 166.31, "high": 181.92, "low": 162.27, "close": 179.02, "ma60": 126.14, "diff": 52.88, "diff_pct_ma": 41.92, "diff_pct_close": 29.54}, {"time": "2019-07-01", "open": 182.45, "high": 187.46, "low": 180.59, "close": 183.2, "ma60": 127.75, "diff": 55.45, "diff_pct_ma": 43.41, "diff_pct_close": 30.27}, {"time": "2019-08-01", "open": 183.51, "high": 186.92, "low": 171.79, "close": 179.72, "ma60": 129.22, "diff": 50.5, "diff_pct_ma": 39.08, "diff_pct_close": 28.1}, {"time": "2019-09-01", "open": 178.88, "high": 187.03, "low": 177.74, "close": 181.37, "ma60": 130.74, "diff": 50.63, "diff_pct_ma": 38.73, "diff_pct_close": 27.92}, {"time": "2019-10-01", "open": 182.03, "high": 190.03, "low": 174.65, "close": 189.31, "ma60": 132.35, "diff": 56.96, "diff_pct_ma": 43.04, "diff_pct_close": 30.09}, {"time": "2019-11-01", "open": 190.13, "high": 197.93, "low": 189.84, "close": 197.01, "ma60": 134.01, "diff": 63.0, "diff_pct_ma": 47.01, "diff_pct_close": 31.98}, {"time": "2019-12-01", "open": 197.45, "high": 206.55, "low": 191.79, "close": 204.67, "ma60": 135.84, "diff": 68.83, "diff_pct_ma": 50.67, "diff_pct_close": 33.63}, {"time": "2020-01-01", "open": 206.39, "high": 217.45, "low": 204.32, "close": 210.89, "ma60": 137.81, "diff": 73.08, "diff_pct_ma": 53.03, "diff_pct_close": 34.65}, {"time": "2020-02-01", "open": 211.92, "high": 228.6, "low": 190.77, "close": 198.12, "ma60": 139.45, "diff": 58.67, "diff_pct_ma": 42.07, "diff_pct_close": 29.61}, {"time": "2020-03-01", "open": 201.51, "high": 211.86, "low": 159.11, "close": 183.68, "ma60": 140.89, "diff": 42.79, "diff_pct_ma": 30.37, "diff_pct_close": 23.3}, {"time": "2020-04-01", "open": 178.25, "high": 212.28, "low": 174.48, "close": 211.19, "ma60": 142.76, "diff": 68.43, "diff_pct_ma": 47.93, "diff_pct_close": 32.4}, {"time": "2020-05-01", "open": 206.93, "high": 225.36, "low": 203.67, "close": 225.13, "ma60": 144.83, "diff": 80.3, "diff_pct_ma": 55.44, "diff_pct_close": 35.67}, {"time": "2020-06-01", "open": 224.65, "high": 242.71, "low": 223.69, "close": 239.28, "ma60": 147.17, "diff": 92.11, "diff_pct_ma": 62.59, "diff_pct_close": 38.49}, {"time": "2020-07-01", "open": 239.32, "high": 260.72, "low": 238.78, "close": 256.86, "ma60": 149.73, "diff": 107.13, "diff_pct_ma": 71.55, "diff_pct_close": 41.71}, {"time": "2020-08-01", "open": 258.99, "high": 286.78, "low": 255.74, "close": 284.97, "ma60": 152.87, "diff": 132.1, "diff_pct_ma": 86.41, "diff_pct_close": 46.36}, {"time": "2020-09-01", "open": 287.62, "high": 293.3, "low": 251.37, "close": 268.5, "ma60": 155.78, "diff": 112.72, "diff_pct_ma": 72.36, "diff_pct_close": 41.98}, {"time": "2020-10-01", "open": 272.32, "high": 287.46, "low": 258.09, "close": 260.33, "ma60": 158.37, "diff": 101.96, "diff_pct_ma": 64.38, "diff_pct_close": 39.17}, {"time": "2020-11-01", "open": 262.71, "high": 290.08, "low": 258.0, "close": 289.55, "ma60": 161.44, "diff": 128.11, "diff_pct_ma": 79.35, "diff_pct_close": 44.24}, {"time": "2020-12-01", "open": 292.35, "high": 304.66, "low": 288.59, "close": 303.74, "ma60": 164.77, "diff": 138.97, "diff_pct_ma": 84.34, "diff_pct_close": 45.75}, {"time": "2021-01-01", "open": 305.07, "high": 319.8, "low": 295.46, "close": 304.54, "ma60": 168.24, "diff": 136.3, "diff_pct_ma": 81.02, "diff_pct_close": 44.76}, {"time": "2021-02-01", "open": 307.98, "high": 327.42, "low": 300.98, "close": 304.13, "ma60": 171.72, "diff": 132.41, "diff_pct_ma": 77.11, "diff_pct_close": 43.54}, {"time": "2021-03-01", "open": 309.49, "high": 314.39, "low": 288.34, "close": 309.35, "ma60": 175.18, "diff": 134.17, "diff_pct_ma": 76.59, "diff_pct_close": 43.37}, {"time": "2021-04-01", "open": 313.17, "high": 332.3, "low": 312.92, "close": 327.64, "ma60": 179.0, "diff": 148.64, "diff_pct_ma": 83.04, "diff_pct_close": 45.37}, {"time": "2021-05-01", "open": 328.84, "high": 329.58, "low": 306.32, "close": 323.7, "ma60": 182.69, "diff": 141.01, "diff_pct_ma": 77.19, "diff_pct_close": 43.56}, {"time": "2021-06-01", "open": 325.41, "high": 344.75, "low": 318.59, "close": 343.97, "ma60": 186.75, "diff": 157.22, "diff_pct_ma": 84.19, "diff_pct_close": 45.71}, {"time": "2021-07-01", "open": 343.62, "high": 358.0, "low": 341.65, "close": 353.81, "ma60": 190.85, "diff": 162.96, "diff_pct_ma": 85.39, "diff_pct_close": 46.06}, {"time": "2021-08-01", "open": 355.47, "high": 369.52, "low": 349.34, "close": 368.74, "ma60": 195.18, "diff": 173.56, "diff_pct_ma": 88.92, "diff_pct_close": 47.07}, {"time": "2021-09-01", "open": 370.21, "high": 371.9, "low": 346.95, "close": 347.78, "ma60": 199.13, "diff": 148.65, "diff_pct_ma": 74.65, "diff_pct_close": 42.74}, {"time": "2021-10-01", "open": 348.4, "high": 375.3, "low": 340.36, "close": 375.13, "ma60": 203.56, "diff": 171.57, "diff_pct_ma": 84.28, "diff_pct_close": 45.74}, {"time": "2021-11-01", "open": 375.57, "high": 397.09, "low": 373.49, "close": 382.62, "ma60": 208.1, "diff": 174.52, "diff_pct_ma": 83.86, "diff_pct_close": 45.61}, {"time": "2021-12-01", "open": 387.45, "high": 393.58, "low": 367.21, "close": 387.03, "ma60": 212.7, "diff": 174.33, "diff_pct_ma": 81.96, "diff_pct_close": 45.04}, {"time": "2022-01-01", "open": 388.2, "high": 391.34, "low": 325.06, "close": 353.18, "ma60": 216.64, "diff": 136.54, "diff_pct_ma": 63.03, "diff_pct_close": 38.66}, {"time": "2022-02-01", "open": 354.52, "high": 360.04, "low": 309.61, "close": 337.37, "ma60": 220.23, "diff": 117.14, "diff_pct_ma": 53.19, "diff_pct_close": 34.72}, {"time": "2022-03-01", "open": 336.76, "high": 362.17, "low": 309.2, "close": 353.12, "ma60": 224.04, "diff": 129.08, "diff_pct_ma": 57.61, "diff_pct_close": 36.55}, {"time": "2022-04-01", "open": 353.38, "high": 359.71, "low": 304.48, "close": 305.11, "ma60": 226.99, "diff": 78.12, "diff_pct_ma": 34.42, "diff_pct_close": 25.6}, {"time": "2022-05-01", "open": 304.7, "high": 321.71, "low": 272.93, "close": 300.27, "ma60": 229.78, "diff": 70.49, "diff_pct_ma": 30.68, "diff_pct_close": 23.48}, {"time": "2022-06-01", "open": 302.98, "high": 306.97, "low": 262.79, "close": 273.52, "ma60": 232.18, "diff": 41.34, "diff_pct_ma": 17.81, "diff_pct_close": 15.11}, {"time": "2022-07-01", "open": 272.22, "high": 308.76, "low": 270.08, "close": 307.85, "ma60": 235.06, "diff": 72.79, "diff_pct_ma": 30.97, "diff_pct_close": 23.64}, {"time": "2022-08-01", "open": 306.09, "high": 326.35, "low": 291.24, "close": 292.05, "ma60": 237.63, "diff": 54.42, "diff_pct_ma": 22.9, "diff_pct_close": 18.63}, {"time": "2022-09-01", "open": 290.08, "high": 304.12, "low": 261.13, "close": 261.28, "ma60": 239.7, "diff": 21.58, "diff_pct_ma": 9.0, "diff_pct_close": 8.26}, {"time": "2022-10-01", "open": 263.05, "high": 278.23, "low": 248.57, "close": 271.73, "ma60": 241.83, "diff": 29.9, "diff_pct_ma": 12.36, "diff_pct_close": 11.0}, {"time": "2022-11-01", "open": 275.2, "high": 286.91, "low": 253.29, "close": 286.8, "ma60": 244.17, "diff": 42.63, "diff_pct_ma": 17.46, "diff_pct_close": 14.86}, {"time": "2022-12-01", "open": 287.81, "high": 290.94, "low": 254.53, "close": 260.95, "ma60": 246.06, "diff": 14.89, "diff_pct_ma": 6.05, "diff_pct_close": 5.71}, {"time": "2023-01-01", "open": 263.27, "high": 292.29, "low": 255.13, "close": 288.72, "ma60": 248.2, "diff": 40.52, "diff_pct_ma": 16.33, "diff_pct_close": 14.03}, {"time": "2023-02-01", "open": 288.51, "high": 307.4, "low": 284.24, "close": 287.68, "ma60": 250.35, "diff": 37.33, "diff_pct_ma": 14.91, "diff_pct_close": 12.98}, {"time": "2023-03-01", "open": 287.83, "high": 315.23, "low": 279.91, "close": 314.99, "ma60": 253.07, "diff": 61.92, "diff_pct_ma": 24.47, "diff_pct_close": 19.66}, {"time": "2023-04-01", "open": 312.87, "high": 316.68, "low": 304.15, "close": 316.59, "ma60": 255.8, "diff": 60.79, "diff_pct_ma": 23.76, "diff_pct_close": 19.2}, {"time": "2023-05-01", "open": 316.13, "high": 347.38, "low": 309.29, "close": 341.55, "ma60": 258.81, "diff": 82.74, "diff_pct_ma": 31.97, "diff_pct_close": 24.22}, {"time": "2023-06-01", "open": 341.76, "high": 366.45, "low": 340.71, "close": 363.08, "ma60": 262.14, "diff": 100.94, "diff_pct_ma": 38.51, "diff_pct_close": 27.8}, {"time": "2023-07-01", "open": 363.72, "high": 381.32, "low": 357.17, "close": 377.1, "ma60": 265.63, "diff": 111.47, "diff_pct_ma": 41.96, "diff_pct_close": 29.56}, {"time": "2023-08-01", "open": 375.75, "high": 376.98, "low": 348.62, "close": 371.5, "ma60": 268.87, "diff": 102.63, "diff_pct_ma": 38.17, "diff_pct_close": 27.63}, {"time": "2023-09-01", "open": 374.41, "high": 374.84, "low": 345.83, "close": 352.63, "ma60": 271.8, "diff": 80.83, "diff_pct_ma": 29.74, "diff_pct_close": 22.92}, {"time": "2023-10-01", "open": 352.9, "high": 367.86, "low": 336.96, "close": 345.35, "ma60": 274.86, "diff": 70.49, "diff_pct_ma": 25.65, "diff_pct_close": 20.41}, {"time": "2023-11-01", "open": 346.18, "high": 387.94, "low": 346.09, "close": 382.71, "ma60": 278.55, "diff": 104.16, "diff_pct_ma": 37.39, "diff_pct_close": 27.22}, {"time": "2023-12-01", "open": 382.61, "high": 407.45, "low": 377.59, "close": 404.09, "ma60": 282.83, "diff": 121.26, "diff_pct_ma": 42.87, "diff_pct_close": 30.01}, {"time": "2024-01-01", "open": 400.46, "high": 424.15, "low": 390.1, "close": 411.44, "ma60": 287.01, "diff": 124.43, "diff_pct_ma": 43.35, "diff_pct_close": 30.24}, {"time": "2024-02-01", "open": 413.24, "high": 434.75, "low": 412.27, "close": 433.18, "ma60": 291.47, "diff": 141.71, "diff_pct_ma": 48.62, "diff_pct_close": 32.71}, {"time": "2024-03-01", "open": 434.64, "high": 443.97, "low": 427.57, "close": 438.7, "ma60": 295.92, "diff": 142.78, "diff_pct_ma": 48.25, "diff_pct_close": 32.55}, {"time": "2024-04-01", "open": 439.65, "high": 442.18, "low": 408.13, "close": 419.52, "ma60": 299.89, "diff": 119.63, "diff_pct_ma": 39.89, "diff_pct_close": 28.52}, {"time": "2024-05-01", "open": 418.09, "high": 455.08, "low": 415.6, "close": 445.32, "ma60": 304.54, "diff": 140.78, "diff_pct_ma": 46.23, "diff_pct_close": 31.61}, {"time": "2024-06-01", "open": 449.85, "high": 482.14, "low": 443.25, "close": 474.14, "ma60": 309.46, "diff": 164.68, "diff_pct_ma": 53.22, "diff_pct_close": 34.73}, {"time": "2024-07-01", "open": 475.06, "high": 498.29, "low": 449.44, "close": 466.18, "ma60": 314.17, "diff": 152.01, "diff_pct_ma": 48.38, "diff_pct_close": 32.61}, {"time": "2024-08-01", "open": 466.86, "high": 480.5, "low": 419.06, "close": 471.33, "ma60": 319.03, "diff": 152.3, "diff_pct_ma": 47.74, "diff_pct_close": 32.31}, {"time": "2024-09-01", "open": 466.43, "high": 489.26, "low": 444.16, "close": 483.68, "ma60": 324.07, "diff": 159.61, "diff_pct_ma": 49.25, "diff_pct_close": 33.0}, {"time": "2024-10-01", "open": 483.32, "high": 496.84, "low": 473.11, "close": 479.5, "ma60": 328.91, "diff": 150.59, "diff_pct_ma": 45.78, "diff_pct_close": 31.41}, {"time": "2024-11-01", "open": 481.14, "high": 510.95, "low": 479.9, "close": 505.16, "ma60": 334.05, "diff": 171.11, "diff_pct_ma": 51.22, "diff_pct_close": 33.87}, {"time": "2024-12-01", "open": 507.23, "high": 535.17, "low": 505.53, "close": 507.45, "ma60": 339.09, "diff": 168.36, "diff_pct_ma": 49.65, "diff_pct_close": 33.18}, {"time": "2025-01-01", "open": 510.5, "high": 529.88, "low": 496.01, "close": 518.43, "ma60": 344.22, "diff": 174.21, "diff_pct_ma": 50.61, "diff_pct_close": 33.6}, {"time": "2025-02-01", "open": 509.68, "high": 536.81, "low": 493.26, "close": 504.41, "ma60": 349.32, "diff": 155.09, "diff_pct_ma": 44.4, "diff_pct_close": 30.75}, {"time": "2025-03-01", "open": 508.5, "high": 510.01, "low": 454.63, "close": 466.15, "ma60": 354.03, "diff": 112.12, "diff_pct_ma": 31.67, "diff_pct_close": 24.05}, {"time": "2025-04-01", "open": 464.54, "high": 476.73, "low": 400.01, "close": 472.66, "ma60": 358.39, "diff": 114.27, "diff_pct_ma": 31.88, "diff_pct_close": 24.18}, {"time": "2025-05-01", "open": 480.55, "high": 523.37, "low": 473.96, "close": 516.04, "ma60": 363.24, "diff": 152.8, "diff_pct_ma": 42.07, "diff_pct_close": 29.61}, {"time": "2025-06-01", "open": 514.76, "high": 550.15, "low": 513.5, "close": 549.0, "ma60": 368.4, "diff": 180.6, "diff_pct_ma": 49.02, "diff_pct_close": 32.9}, {"time": "2025-07-01", "open": 547.1, "high": 571.88, "low": 542.05, "close": 562.3, "ma60": 373.49, "diff": 188.81, "diff_pct_ma": 50.55, "diff_pct_close": 33.58}, {"time": "2025-08-01", "open": 556.15, "high": 580.52, "low": 549.04, "close": 567.67, "ma60": 378.2, "diff": 189.47, "diff_pct_ma": 50.1, "diff_pct_close": 33.38}, {"time": "2025-09-01", "open": 559.27, "high": 600.68, "low": 557.5, "close": 598.18, "ma60": 383.7, "diff": 214.48, "diff_pct_ma": 55.9, "diff_pct_close": 35.86}, {"time": "2025-10-01", "open": 595.0, "high": 634.69, "low": 586.91, "close": 626.78, "ma60": 389.8, "diff": 236.98, "diff_pct_ma": 60.8, "diff_pct_close": 37.81}, {"time": "2025-11-01", "open": 632.8, "high": 633.51, "low": 578.63, "close": 617.0, "ma60": 395.26, "diff": 221.74, "diff_pct_ma": 56.1, "diff_pct_close": 35.94}, {"time": "2025-12-01", "open": 612.18, "high": 627.73, "low": 598.87, "close": 612.86, "ma60": 400.41, "diff": 212.45, "diff_pct_ma": 53.06, "diff_pct_close": 34.67}, {"time": "2026-01-01", "open": 618.6, "high": 635.1, "low": 605.62, "close": 620.41, "ma60": 405.68, "diff": 214.73, "diff_pct_ma": 52.93, "diff_pct_close": 34.61}, {"time": "2026-02-01", "open": 617.24, "high": 628.5, "low": 591.94, "close": 605.86, "ma60": 410.71, "diff": 195.15, "diff_pct_ma": 47.52, "diff_pct_close": 32.21}, {"time": "2026-03-01", "open": 598.2, "high": 612.62, "low": 554.99, "close": 576.55, "ma60": 415.16, "diff": 161.39, "diff_pct_ma": 38.87, "diff_pct_close": 27.99}, {"time": "2026-04-01", "open": 580.84, "high": 668.17, "low": 571.29, "close": 667.01, "ma60": 420.82, "diff": 246.19, "diff_pct_ma": 58.5, "diff_pct_close": 36.91}, {"time": "2026-05-01", "open": 668.43, "high": 740.82, "low": 668.07, "close": 737.5, "ma60": 427.71, "diff": 309.79, "diff_pct_ma": 72.43, "diff_pct_close": 42.01}, {"time": "2026-06-01", "open": 737.04, "high": 748.65, "low": 686.37, "close": 736.4, "ma60": 434.25, "diff": 302.15, "diff_pct_ma": 69.58, "diff_pct_close": 41.03}, {"time": "2026-07-01", "open": 729.19, "high": 731.92, "low": 661.14, "close": 687.99, "ma60": 439.82, "diff": 248.17, "diff_pct_ma": 56.43, "diff_pct_close": 36.07}, {"time": "2026-08-01", "open": 688.3, "high": 734.58, "low": 685.82, "close": 716.76, "ma60": 445.62, "diff": 271.14, "diff_pct_ma": 60.85, "diff_pct_close": 37.83}, {"time": "2026-09-01", "open": 707.39, "high": 721.89, "low": 700.0, "close": 721.45, "ma60": 451.85, "diff": 269.6, "diff_pct_ma": 59.67, "diff_pct_close": 37.37}], "count": 331};
+        async function reloadData(force = false) {
+            if (force) {
+                try {
+                    const res = await fetch(`/api/data?force=true`);
+                    const json = await res.json();
+                    if (json.status === 'success') {
+                        renderData(json.data);
+                        return;
+                    }
+                } catch (e) {}
+            }
+            renderData(EMBEDDED_DATA);
+            document.getElementById('loading').style.display = 'none';
+        }
+    </script>
+    
+</body>
+</html>
