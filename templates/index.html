@@ -21,7 +21,6 @@
             --text-sub: #8b98a5;
             --accent-green: #00e676;
             --accent-red: #ff5252;
-            --accent-lightning: #e040fb;
             --accent-fire: #ff9100;
             --ma-color: #ffb300;
             --candle-up: #089981;
@@ -142,18 +141,9 @@
             border-radius: 4px;
             font-size: 10px;
             font-weight: 800;
-        }
-
-        .target-date .hot-tag.fire {
             background: rgba(255, 145, 0, 0.2);
             color: #ff9100;
             border: 1px solid rgba(255, 145, 0, 0.4);
-        }
-
-        .target-date .hot-tag.lightning {
-            background: rgba(224, 64, 251, 0.2);
-            color: #e040fb;
-            border: 1px solid rgba(224, 64, 251, 0.4);
         }
 
         /* Main Metric Badge */
@@ -174,12 +164,6 @@
             background: rgba(255, 145, 0, 0.2);
             border: 1px solid rgba(255, 145, 0, 0.5);
             color: #ff9100;
-        }
-
-        .main-stat-badge.lightning {
-            background: rgba(224, 64, 251, 0.22);
-            border: 1px solid rgba(224, 64, 251, 0.55);
-            color: #e040fb;
         }
 
         .main-stat-badge.minus {
@@ -468,10 +452,7 @@
         </div>
         <div class="legend-indicator">
             <div class="legend-item">
-                <span>🔥 50%+</span>
-            </div>
-            <div class="legend-item">
-                <span>⚡ 60%+</span>
+                <span>🔥 60%+</span>
             </div>
             <div class="legend-item">
                 <div class="legend-color" style="background: var(--ma-color); height: 2px;"></div>
@@ -606,16 +587,11 @@
                 const multiple = (stat.close / stat.ma60).toFixed(2);
                 multipleEl.textContent = `${multiple}x`;
 
-                if (gVal >= 60.0) {
-                    badge.className = 'main-stat-badge lightning';
-                    growthPctEl.textContent = `⚡ ${gSign}${gVal.toFixed(2)}%`;
-                    hotTagEl.className = 'hot-tag lightning';
-                    hotTagEl.textContent = '⚡ 60%+';
-                } else if (gVal >= 50.0) {
+                // 50% ~ 60% 구간: 상단 하이라이트 배지 및 태그 유지
+                if (gVal >= 50.0 && gVal < 60.0) {
                     badge.className = 'main-stat-badge fire';
-                    growthPctEl.textContent = `🔥 ${gSign}${gVal.toFixed(2)}%`;
-                    hotTagEl.className = 'hot-tag fire';
-                    hotTagEl.textContent = '🔥 50%+';
+                    hotTagEl.className = 'hot-tag';
+                    hotTagEl.textContent = '50%+ 과열';
                 } else {
                     badge.className = 'main-stat-badge ' + (gVal >= 0 ? 'plus' : 'minus');
                     hotTagEl.className = '';
@@ -662,16 +638,8 @@
             data.stats.forEach(s => {
                 statsMap[s.time] = s;
                 if (s.growth_pct !== null && s.growth_pct !== undefined) {
+                    // 60% 이상만 차트 캔들 상단에 🔥 마커 표기
                     if (s.growth_pct >= 60.0) {
-                        markers.push({
-                            time: s.time,
-                            position: 'aboveBar',
-                            color: '#e040fb',
-                            shape: 'circle',
-                            text: '⚡',
-                            size: 1
-                        });
-                    } else if (s.growth_pct >= 50.0) {
                         markers.push({
                             time: s.time,
                             position: 'aboveBar',
