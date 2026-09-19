@@ -4,9 +4,9 @@ import pandas as pd
 from datetime import datetime
 
 def export_standalone_html(output_file='qqq_monthly_chart.html'):
-    print("Fetching QQQ monthly data from Yahoo Finance...")
+    print("Fetching QQQ unadjusted monthly data from Yahoo Finance...")
     ticker = yf.Ticker('QQQ')
-    df = ticker.history(period='max', interval='1mo').reset_index()
+    df = ticker.history(period='max', interval='1mo', auto_adjust=False).reset_index()
     
     df['time'] = pd.to_datetime(df['Date']).dt.strftime('%Y-%m-%d')
     df['ma60'] = df['Close'].rolling(window=60).mean()
@@ -29,12 +29,14 @@ def export_standalone_html(output_file='qqq_monthly_chart.html'):
         diff_val = None
         diff_pct_ma = None
         diff_pct_close = None
+        mts_ratio = None
         
         if not pd.isna(row['ma60']):
             ma_val = round(float(row['ma60']), 2)
             diff_val = round(c - ma_val, 2)
             diff_pct_ma = round(((c - ma_val) / ma_val) * 100, 2)
             diff_pct_close = round(((c - ma_val) / c) * 100, 2)
+            mts_ratio = round(((ma_val - c) / c) * 100, 2)
             
             ma60_line.append({'time': t, 'value': ma_val})
         
@@ -47,7 +49,8 @@ def export_standalone_html(output_file='qqq_monthly_chart.html'):
             'ma60': ma_val,
             'diff': diff_val,
             'diff_pct_ma': diff_pct_ma,
-            'diff_pct_close': diff_pct_close
+            'diff_pct_close': diff_pct_close,
+            'mts_ratio': mts_ratio
         })
         
     dataset = {
@@ -63,7 +66,6 @@ def export_standalone_html(output_file='qqq_monthly_chart.html'):
     with open('templates/index.html', 'r', encoding='utf-8') as f:
         html = f.read()
         
-    # Inject standalone embedded data script
     inject_script = f"""
     <script>
         const EMBEDDED_DATA = {json.dumps(dataset)};

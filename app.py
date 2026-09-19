@@ -1,16 +1,14 @@
-from flask import Flask, render_template, jsonify, request
+﻿from flask import Flask, render_template, jsonify, request
 import yfinance as yf
 import pandas as pd
-import numpy as np
 from datetime import datetime
 import time
 
 app = Flask(__name__)
 
-# Cache variables
 _cache_data = None
 _cache_time = 0
-CACHE_DURATION_SEC = 60  # 1 minute cache
+CACHE_DURATION_SEC = 60
 
 def fetch_qqq_monthly_data(force=False):
     global _cache_data, _cache_time
@@ -21,7 +19,8 @@ def fetch_qqq_monthly_data(force=False):
     
     try:
         ticker = yf.Ticker('QQQ')
-        df = ticker.history(period='max', interval='1mo')
+        # auto_adjust=False ensures exact match with MTS market prices
+        df = ticker.history(period='max', interval='1mo', auto_adjust=False)
         
         if df.empty:
             if _cache_data is not None:
@@ -29,10 +28,9 @@ def fetch_qqq_monthly_data(force=False):
             raise ValueError('No data fetched from Yahoo Finance')
             
         df = df.reset_index()
-        # Ensure Date format YYYY-MM-DD
         df['time'] = pd.to_datetime(df['Date']).dt.strftime('%Y-%m-%d')
         
-        # Calculate 60-month Moving Average (SMA 60)
+        # 60-month Moving Average based on unadjusted Close
         df['ma60'] = df['Close'].rolling(window=60).mean()
         
         candles = []
@@ -58,14 +56,16 @@ def fetch_qqq_monthly_data(force=False):
             
             ma_val = None
             diff_val = None
-            diff_pct_ma = None     # (Close - MA60) / MA60 * 100
-            diff_pct_close = None  # (Close - MA60) / Close * 100
+            diff_pct_ma = None      # (Close - MA60) / MA60 * 100
+            diff_pct_close = None   # (Close - MA60) / Close * 100
+            mts_ratio = None        # (MA60 - Close) / Close * 100 (증권사 MTS 방식)
             
             if not pd.isna(row['ma60']):
                 ma_val = round(float(row['ma60']), 2)
                 diff_val = round(c - ma_val, 2)
                 diff_pct_ma = round(((c - ma_val) / ma_val) * 100, 2)
                 diff_pct_close = round(((c - ma_val) / c) * 100, 2)
+                mts_ratio = round(((ma_val - c) / c) * 100, 2)
                 
                 ma60_line.append({
                     'time': t,
@@ -81,7 +81,8 @@ def fetch_qqq_monthly_data(force=False):
                 'ma60': ma_val,
                 'diff': diff_val,
                 'diff_pct_ma': diff_pct_ma,
-                'diff_pct_close': diff_pct_close
+                'diff_pct_close': diff_pct_close,
+                'mts_ratio': mts_ratio
             })
             
         result = {
@@ -117,6 +118,5 @@ def api_data():
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 if __name__ == '__main__':
-    # 0.0.0.0 enables mobile access over local Wi-Fi
     print('Starting QQQ Monthly 60MA Mobile Chart Server on http://0.0.0.0:5000')
     app.run(host='0.0.0.0', port=5000, debug=True)

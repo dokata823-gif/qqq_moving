@@ -374,7 +374,7 @@
             </div>
             <!-- Main requested ratio: Disparity % -->
             <div class="main-stat-badge na" id="disparity-badge">
-                <span class="stat-label-mini">종가 vs 60월MA 이격률</span>
+                <span class="stat-label-mini">종가 대비 60선 위치 (MTS)</span>
                 <span class="stat-val-huge" id="val-diff-pct">--%</span>
             </div>
         </div>
@@ -382,7 +382,7 @@
         <!-- Metric Details Grid -->
         <div class="metric-grid">
             <div class="metric-card">
-                <div class="title">60월 이동평균</div>
+                <div class="title">60월 이평가</div>
                 <div class="value" style="color: var(--ma-color);" id="val-ma60">--</div>
             </div>
             <div class="metric-card">
@@ -390,11 +390,11 @@
                 <div class="value" id="val-diff-dollar">--</div>
             </div>
             <div class="metric-card">
-                <div class="title">이격률 (MA기준)</div>
+                <div class="title">이격률 (60선기준)</div>
                 <div class="value" id="val-diff-ma-pct">--</div>
             </div>
             <div class="metric-card">
-                <div class="title">이격률 (종가기준)</div>
+                <div class="title">종가대비 위치(MTS)</div>
                 <div class="value" id="val-diff-close-pct">--</div>
             </div>
         </div>
@@ -564,12 +564,16 @@
                 diffMaPctEl.textContent = `${sign}${stat.diff_pct_ma.toFixed(2)}%`;
                 diffMaPctEl.style.color = diff >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
 
-                diffClosePctEl.textContent = `${sign}${stat.diff_pct_close.toFixed(2)}%`;
-                diffClosePctEl.style.color = diff >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+                // MTS ratio: (MA60 - Close) / Close * 100
+                const mtsVal = stat.mts_ratio !== undefined ? stat.mts_ratio : -stat.diff_pct_close;
+                const mtsSign = mtsVal > 0 ? '+' : '';
+                diffClosePctEl.textContent = `${mtsSign}${mtsVal.toFixed(2)}%`;
+                diffClosePctEl.style.color = mtsVal >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
 
-                diffPctEl.textContent = `${sign}${stat.diff_pct_ma.toFixed(2)}%`;
+                // Main badge shows MTS ratio or standard disparity
+                diffPctEl.textContent = `${mtsSign}${mtsVal.toFixed(2)}%`;
 
-                badge.className = 'main-stat-badge ' + (diff >= 0 ? 'plus' : 'minus');
+                badge.className = 'main-stat-badge ' + (mtsVal >= 0 ? 'plus' : 'minus');
             } else {
                 ma60El.textContent = '60개월 이전';
                 diffDollarEl.textContent = '--';
