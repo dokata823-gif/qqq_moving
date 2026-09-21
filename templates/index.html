@@ -296,11 +296,12 @@
             background: #11151f;
             border: 1px solid var(--card-border);
             color: var(--text-sub);
-            padding: 5px 10px;
+            padding: 5px 11px;
             border-radius: 6px;
             font-size: 11px;
             font-weight: 600;
             cursor: pointer;
+            transition: all 0.15s ease-in-out;
         }
 
         .time-btn.active {
@@ -430,13 +431,13 @@
         </div>
     </main>
 
-    <!-- Bottom Toolbar -->
+    <!-- Bottom Toolbar (10년, 5년, 1년, 6개월) -->
     <footer class="bottom-toolbar">
         <div class="time-range-group">
-            <button class="time-btn" onclick="setRange('all')">전체</button>
-            <button class="time-btn" onclick="setRange('10y')">10년</button>
-            <button class="time-btn" onclick="setRange('5y')">5년</button>
-            <button class="time-btn active" onclick="fitChart()">자동맞춤</button>
+            <button class="time-btn active" id="btn-10y" onclick="setRange('10y')">10년</button>
+            <button class="time-btn" id="btn-5y" onclick="setRange('5y')">5년</button>
+            <button class="time-btn" id="btn-1y" onclick="setRange('1y')">1년</button>
+            <button class="time-btn" id="btn-6m" onclick="setRange('6m')">6개월</button>
         </div>
         <div class="legend-indicator">
             <div class="legend-item">
@@ -674,25 +675,22 @@
                 updatePanel(latestStat);
             }
 
-            fitChart();
-        }
-
-        function fitChart() {
-            if (chart) {
-                chart.timeScale().fitContent();
-            }
+            // 기본 10년 범위로 표시
+            setRange('10y');
         }
 
         function setRange(range) {
             if (!rawData || !rawData.candles || rawData.candles.length === 0) return;
             const len = rawData.candles.length;
             let fromIndex = 0;
-            if (range === '5y') {
+            if (range === '6m') {
+                fromIndex = Math.max(0, len - 6);
+            } else if (range === '1y') {
+                fromIndex = Math.max(0, len - 12);
+            } else if (range === '5y') {
                 fromIndex = Math.max(0, len - 60);
             } else if (range === '10y') {
                 fromIndex = Math.max(0, len - 120);
-            } else {
-                fromIndex = 0;
             }
             const fromTime = rawData.candles[fromIndex].time;
             const toTime = rawData.candles[len - 1].time;
@@ -700,6 +698,13 @@
                 from: fromTime,
                 to: toTime
             });
+
+            // Update active button state
+            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+            const activeBtn = document.getElementById(`btn-${range}`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
         }
 
         window.onload = () => {
