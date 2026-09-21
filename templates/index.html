@@ -431,13 +431,13 @@
         </div>
     </main>
 
-    <!-- Bottom Toolbar (10년, 5년, 1년, 6개월) -->
+    <!-- Bottom Toolbar (10년, 5년, 3년, 1년) -->
     <footer class="bottom-toolbar">
         <div class="time-range-group">
             <button class="time-btn active" id="btn-10y" onclick="setRange('10y')">10년</button>
             <button class="time-btn" id="btn-5y" onclick="setRange('5y')">5년</button>
+            <button class="time-btn" id="btn-3y" onclick="setRange('3y')">3년</button>
             <button class="time-btn" id="btn-1y" onclick="setRange('1y')">1년</button>
-            <button class="time-btn" id="btn-6m" onclick="setRange('6m')">6개월</button>
         </div>
         <div class="legend-indicator">
             <div class="legend-item">
@@ -683,10 +683,10 @@
             if (!rawData || !rawData.candles || rawData.candles.length === 0) return;
             const len = rawData.candles.length;
             let fromIndex = 0;
-            if (range === '6m') {
-                fromIndex = Math.max(0, len - 6);
-            } else if (range === '1y') {
+            if (range === '1y') {
                 fromIndex = Math.max(0, len - 12);
+            } else if (range === '3y') {
+                fromIndex = Math.max(0, len - 36);
             } else if (range === '5y') {
                 fromIndex = Math.max(0, len - 60);
             } else if (range === '10y') {
